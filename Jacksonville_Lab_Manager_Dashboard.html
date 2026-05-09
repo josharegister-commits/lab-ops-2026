@@ -4076,14 +4076,29 @@ const MEDTRONIC_PAR = [
     const collapseBtnEl = document.getElementById('btn-collapse');
     if (collapseBtnEl) collapseBtnEl.style.display = (CURRENT_VIEW === 'team') ? 'none' : '';
 
-    // Header tweaks per role
+    // Personal greeting per role
     const titleEl = document.querySelector('header .title-block h1');
-    if (titleEl && CURRENT_ROLE_KEY !== 'master') {
-      titleEl.textContent = `Jacksonville Lab — ${CURRENT_ROLE.name}`;
+    const locEl   = document.querySelector('header .title-block .location');
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    const firstNameMap = {
+      master:   'Josh',
+      anamaria: 'Ana Maria',
+      bert:     'Bert',
+      latisha:  'Latisha',
+    };
+    const subtitleMap = {
+      master:   'Jacksonville Bioskills Lab — Manager Dashboard',
+      anamaria: 'Specimens & Meeting Planning',
+      bert:     'Lab Manager',
+      latisha:  'Your upcoming Med Ed events',
+    };
+    const firstName = firstNameMap[CURRENT_ROLE_KEY] || CURRENT_ROLE.name;
+    if (titleEl) {
+      titleEl.textContent = `Good ${timeOfDay}, ${firstName}`;
     }
-    const locEl = document.querySelector('header .title-block .location');
-    if (locEl && CURRENT_ROLE_KEY !== 'master') {
-      locEl.textContent = CURRENT_ROLE.label + ' · Today + 30 days';
+    if (locEl) {
+      locEl.textContent = subtitleMap[CURRENT_ROLE_KEY] || 'Jacksonville Bioskills Lab';
     }
   })();
 

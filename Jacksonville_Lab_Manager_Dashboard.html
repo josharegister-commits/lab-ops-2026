@@ -1976,6 +1976,27 @@ const MEDTRONIC_PAR = [
   </div>
 </div>
 
+<!-- ─── Add Custom Task Modal ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="custom-task-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3 id="custom-task-title">Add Task</h3>
+      <button class="modal-close" id="custom-task-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="custom-task-context" style="font-size:0.85rem;color:#666;margin-bottom:12px;"></div>
+      <label for="custom-task-text">Task</label>
+      <input type="text" id="custom-task-text" placeholder="e.g. Call vendor for confirmation" />
+      <label for="custom-task-date">Date</label>
+      <input type="date" id="custom-task-date" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="custom-task-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="custom-task-save" type="button">Add task</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Par-Level Check Modal (Lab Supply or Medtronic) ─────────────── -->
 <div class="modal-backdrop" id="par-modal">
   <div class="modal" style="max-width:980px;">
@@ -2019,10 +2040,11 @@ const MEDTRONIC_PAR = [
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   let state = {
-    events: [],          // raw teamup events (jacksonville sub-cal only)
+    events: [],          // raw teamup events (jacksonville sub-cal, or all for Latisha)
     days: [],            // [{ dateKey, dateObj, isToday, isPast, events:[], tasks:[] }]
     filter: 'all',
     allCollapsed: false,
+    subcalMap: {},       // { id → name } populated for Latisha so we can label events
   };
 
   // ── Date helpers ───────────────────────────────────────────────────
@@ -2044,6 +2066,28 @@ const MEDTRONIC_PAR = [
   }
   function fmtDate(d) {
     return DOW_FULL[d.getDay()] + ', ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
+  }
+
+  // ── Custom Tasks (added ad-hoc by team members) ───────────────────
+  // Each entry: { id, ownerRole, scheduledDate, text, eventId, createdAt }
+  // Visibility: each role sees only their own (master sees all).
+  const CUSTOM_TASKS_KEY = cfg.storageNamespace + '.customTasks';
+  function loadCustomTasks() {
+    try {
+      const raw = localStorage.getItem(CUSTOM_TASKS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveCustomTasks(arr) {
+    try { localStorage.setItem(CUSTOM_TASKS_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function newCustomTaskId() {
+    return 'cust_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  }
+  function customTasksVisibleToCurrent() {
+    const all = loadCustomTasks();
+    if (CURRENT_ROLE_KEY === 'master') return all;
+    return all.filter(t => t.ownerRole === CURRENT_ROLE_KEY);
   }
 
   // ── Storage ───────────────────────────────────────────────────────
@@ -2187,9 +2231,25 @@ const MEDTRONIC_PAR = [
       });
     });
 
+    // Custom tasks added by team members — slot into the right day
+    customTasksVisibleToCurrent().forEach(ct => {
+      const dK = ct.scheduledDate;
+      if (!byKey[dK]) return;
+      if (!byKey[dK].customTasks) byKey[dK].customTasks = [];
+      byKey[dK].customTasks.push({
+        id:           ct.id,
+        text:         ct.text,
+        ownerRole:    ct.ownerRole,
+        eventId:      ct.eventId,
+        scheduledDate: dK,
+        checkKey:     'custom:' + ct.id,
+      });
+    });
+
     // Daily ops on every weekday — and weekend days that have an event scheduled
     // Hidden entirely for roles that don't show daily ops (Ana Maria, Latisha)
     days.forEach(day => {
+      if (!day.customTasks) day.customTasks = [];
       if (!CURRENT_ROLE.showDailyOps) return;
       if (isWeekend(day.dateObj) && day.events.length === 0) return;
       DAILY_OPS.forEach(op => {
@@ -2220,12 +2280,14 @@ const MEDTRONIC_PAR = [
   }
 
   // Flatten dailyOps to leaf tasks: items with subTasks contribute their subTasks instead of themselves
+  // Includes custom tasks for the day
   function dailyOpsLeaves(day) {
     const leaves = [];
     day.dailyOps.forEach(op => {
       if (op.subTasks && op.subTasks.length) leaves.push(...op.subTasks);
       else leaves.push(op);
     });
+    if (day.customTasks) leaves.push(...day.customTasks);
     return leaves;
   }
 
@@ -2295,6 +2357,25 @@ const MEDTRONIC_PAR = [
         });
       });
     }
+
+    // 3) Custom tasks scheduled in past — also roll over
+    customTasksVisibleToCurrent().forEach(ct => {
+      const dKey = ct.scheduledDate;
+      if (!dKey) return;
+      if (dKey >= todayKey || dKey < earliestKey) return;
+      const checkKey = 'custom:' + ct.id;
+      if (isChecked(checkKey)) return;
+      overdue.push({
+        source: 'custom',
+        text: ct.text,
+        ownerRole: ct.ownerRole,
+        action: null,
+        checkKey,
+        scheduledKey: dKey,
+        scheduledD:   parseYMD(dKey),
+        customId: ct.id,
+      });
+    });
 
     // Sort oldest first
     overdue.sort((a, b) => a.scheduledKey.localeCompare(b.scheduledKey));
@@ -2418,11 +2499,15 @@ const MEDTRONIC_PAR = [
             Open log →
           </button>
         ` : '';
-        // Role badge in master view
+        // Role avatar — small initial bubble (Linear/Asana style)
         const roleBadge = (CURRENT_ROLE.showRoleBadges && t.roles && t.roles.length) ? t.roles.map(r => {
           const rcfg = ROLES[r];
           if (!rcfg) return '';
-          return `<span style="margin-left:6px;font-size:0.65rem;font-weight:700;letter-spacing:0.4px;padding:1px 6px;border-radius:3px;background:${rcfg.color};color:#fff;text-transform:uppercase;">${escapeHtml((rcfg.name || r).split(' ')[0])}</span>`;
+          // Initials: first letter of each word, max 2
+          const name = rcfg.name || r;
+          const initials = name === 'Master view' ? 'JR'
+            : name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+          return `<span title="${escapeHtml(name)}" style="margin-left:6px;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:0.62rem;font-weight:700;letter-spacing:0;border-radius:50%;background:${rcfg.color};color:#fff;vertical-align:middle;">${escapeHtml(initials)}</span>`;
         }).join('') : '';
         return `
           <label class="task ${checked ? 'done' : ''}" data-key="${escapeHtml(t.checkKey)}">
@@ -2454,15 +2539,32 @@ const MEDTRONIC_PAR = [
         </button>
       ` : '';
 
+      // Sub-calendar tag (shown on Latisha's view since she sees events from many sub-calendars)
+      const subcalName = state.subcalMap[group.event.subcalendar_id] || '';
+      const subcalTag = (CURRENT_ROLE_KEY === 'latisha' && subcalName)
+        ? `<span style="margin-left:6px;font-size:0.65rem;font-weight:700;letter-spacing:0.4px;padding:2px 7px;border-radius:4px;background:#eef2fb;color:#003da5;text-transform:uppercase;">${escapeHtml(subcalName)}</span>`
+        : '';
+
+      // Cost center hint per event (auto-detected from title; falls back to Med Ed)
+      const dsmName = (typeof detectDsmFromTitle === 'function') ? detectDsmFromTitle(group.event.title) : '';
+      const dsm = dsmName ? dsmByName(dsmName) : dsmByName('Med Ed');
+      const ccLine = `<div style="margin-top:4px;font-size:0.78rem;color:#666;">💰 Charge to: <strong style="font-family:ui-monospace,Menlo,monospace;color:#003da5;">${escapeHtml(dsm.cc)}</strong> (${escapeHtml(dsm.name)})</div>`;
+
+      // Add custom task button (only for non-master, non-Latisha-listing-mode roles)
+      const addCustomBtn = `<button type="button" class="btn-add-custom" data-date="${escapeHtml(day.dateKey)}" data-event-id="${escapeHtml(String(group.eventId))}" style="margin-top:8px;background:#fff;border:1.5px dashed #6a1b9a;color:#6a1b9a;font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;">+ Add task to this event</button>`;
+
       return `
         <div class="event-group ${group.cssClass}">
           <div class="event-title">
             <span class="event-tag">${escapeHtml(group.label)}</span>
             ${escapeHtml(group.event.title || '(untitled)')}
+            ${subcalTag}
           </div>
           <div class="event-meta">Event date: ${escapeHtml(eventDateLabel)}</div>
+          ${ccLine}
           <div class="task-list">${tasksHtml}</div>
           ${restockBtnHtml}
+          ${addCustomBtn}
         </div>
       `;
     }).join('');
@@ -2569,10 +2671,39 @@ const MEDTRONIC_PAR = [
       }
     }
 
+    // Custom tasks block + Add button
+    let customHtml = '';
+    const customs = day.customTasks || [];
+    if (customs.length || (!day.isPast)) {
+      const itemsHtml = customs.map(ct => {
+        const checked = isChecked(ct.checkKey);
+        const ownerBadge = (CURRENT_ROLE_KEY === 'master' && ct.ownerRole !== 'master')
+          ? `<span style="margin-left:6px;font-size:0.62rem;font-weight:700;letter-spacing:0.4px;padding:1px 6px;border-radius:3px;background:${(ROLES[ct.ownerRole] && ROLES[ct.ownerRole].color) || '#888'};color:#fff;text-transform:uppercase;">${escapeHtml((ROLES[ct.ownerRole] && ROLES[ct.ownerRole].name.split(' ')[0]) || ct.ownerRole)}</span>`
+          : '';
+        return `
+          <label class="task ${checked ? 'done' : ''}" data-key="${escapeHtml(ct.checkKey)}" style="background:#f3e5f5;border-radius:6px;padding:5px 8px;">
+            <input type="checkbox" ${checked ? 'checked' : ''} />
+            <span class="task-text" style="font-size:0.88rem;">${escapeHtml(ct.text)}<span class="relative-tag" style="background:#ce93d8;color:#4a148c;">CUSTOM</span>${ownerBadge}<button type="button" class="btn-custom-delete" data-id="${escapeHtml(ct.id)}" style="margin-left:8px;background:none;border:none;color:#c1281a;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px;" title="Delete">×</button></span>
+          </label>
+        `;
+      }).join('');
+
+      customHtml = `
+        <div class="daily-ops-block" style="background:#faf2fc;border:1px solid #e1bee7;margin-top:10px;">
+          <div class="ops-title" style="color:#6a1b9a;display:flex;justify-content:space-between;align-items:center;">
+            <span>Custom tasks${customs.length ? ' (' + customs.length + ')' : ''}</span>
+            <button type="button" class="btn-add-custom" data-date="${escapeHtml(day.dateKey)}" style="background:#6a1b9a;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:0;text-transform:none;">+ Add task</button>
+          </div>
+          <div class="task-list">${itemsHtml || '<div class="empty-state-text" style="padding:6px 0;">No custom tasks. Click + Add task to create one.</div>'}</div>
+        </div>
+      `;
+    }
+
     let bodyContent = '';
     if (infoHtml) bodyContent += infoHtml;
     if (groupsHtml) bodyContent += groupsHtml;
     if (opsHtml) bodyContent += opsHtml;
+    if (customHtml) bodyContent += customHtml;
     if (rolledHtml) bodyContent += rolledHtml;
     if (!bodyContent) bodyContent = `<div class="empty-state-text">Nothing scheduled.</div>`;
 
@@ -2710,6 +2841,36 @@ const MEDTRONIC_PAR = [
         const dateKey = btn.getAttribute('data-date');
         if (action === 'labSupplyPar') openParModal('labSupply', dateKey);
         else if (action === 'medtronicPar') openParModal('medtronic', dateKey);
+      });
+    });
+
+    // Wire up Add Custom Task buttons
+    dashEl.querySelectorAll('.btn-add-custom').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const date = btn.getAttribute('data-date');
+        const eventId = btn.getAttribute('data-event-id') || null;
+        openCustomTaskModal(date, eventId);
+      });
+    });
+
+    // Wire up Custom Task Delete buttons
+    dashEl.querySelectorAll('.btn-custom-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const id = btn.getAttribute('data-id');
+        if (!confirm('Delete this custom task?')) return;
+        const list = loadCustomTasks().filter(t => t.id !== id);
+        saveCustomTasks(list);
+        // Also clear its check state
+        const checks = loadChecks();
+        delete checks['custom:' + id];
+        saveChecks(checks);
+        // Rebuild & re-render
+        buildDays();
+        renderAll();
       });
     });
 
@@ -3525,9 +3686,23 @@ const MEDTRONIC_PAR = [
     // Pad start by 7 days backward so we still see prep tasks for events that already started
     const startPadded = ymd(addDays(today, -10));
 
-    const url = `https://api.teamup.com/${cfg.teamupCalendarKey}/events?startDate=${startPadded}&endDate=${end}&subcalendarId[]=${cfg.jacksonvilleSubcalId}`;
+    // Latisha can be scheduled on any sub-calendar (Mobile Labs, Sales Training,
+    // 3rd Party Labs, etc.), so fetch the entire Teamup for her and filter by
+    // name. All other roles only see Jacksonville Lab.
+    const subcalParam = (CURRENT_ROLE_KEY === 'latisha')
+      ? ''
+      : `&subcalendarId[]=${cfg.jacksonvilleSubcalId}`;
+    const url = `https://api.teamup.com/${cfg.teamupCalendarKey}/events?startDate=${startPadded}&endDate=${end}${subcalParam}`;
 
     try {
+      // For Latisha: also fetch sub-calendar names so we can show where she's
+      // scheduled. Done in parallel with the events fetch.
+      const subcalsPromise = (CURRENT_ROLE_KEY === 'latisha')
+        ? fetch(`https://api.teamup.com/${cfg.teamupCalendarKey}/subcalendars`, { headers: { 'Teamup-Token': cfg.teamupApiToken } })
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null)
+        : Promise.resolve(null);
+
       const res = await fetch(url, { headers: { 'Teamup-Token': cfg.teamupApiToken } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -3535,6 +3710,14 @@ const MEDTRONIC_PAR = [
       state.events = (data.events || [])
         .filter(e => !hidden.has((e.title || '').toLowerCase().trim()))
         .sort((a, b) => (a.start_dt || '').localeCompare(b.start_dt || ''));
+
+      const subcalsData = await subcalsPromise;
+      if (subcalsData && subcalsData.subcalendars) {
+        state.subcalMap = Object.fromEntries(
+          subcalsData.subcalendars.map(s => [s.id, (s.name || '').replace(/^Med Ed > /, '').replace(/^Sales Training > /, 'Sales: ')])
+        );
+      }
+
       buildDays();
       renderAll();
     } catch (err) {
@@ -3546,6 +3729,66 @@ const MEDTRONIC_PAR = [
       </div>`;
     }
   }
+
+  // ── Custom Task Modal ────────────────────────────────────────────
+  const customTaskModal   = document.getElementById('custom-task-modal');
+  const customTaskTitle   = document.getElementById('custom-task-title');
+  const customTaskContext = document.getElementById('custom-task-context');
+  const customTaskText    = document.getElementById('custom-task-text');
+  const customTaskDate    = document.getElementById('custom-task-date');
+  const customTaskClose   = document.getElementById('custom-task-close');
+  const customTaskCancel  = document.getElementById('custom-task-cancel');
+  const customTaskSave    = document.getElementById('custom-task-save');
+
+  let customTaskTarget = { date: null, eventId: null };
+
+  function openCustomTaskModal(dateKey, eventId) {
+    customTaskTarget.date = dateKey || ymd(new Date());
+    customTaskTarget.eventId = eventId || null;
+    customTaskText.value = '';
+    customTaskDate.value = customTaskTarget.date;
+    customTaskTitle.textContent = 'Add Task';
+    if (eventId) {
+      const evt = state.events.find(e => String(e.id) === String(eventId));
+      customTaskContext.innerHTML = evt
+        ? `<strong>For event:</strong> ${escapeHtml(evt.title || '(untitled)')}`
+        : `<strong>Date:</strong> ${escapeHtml(dateKey)}`;
+    } else {
+      customTaskContext.innerHTML = `<strong>Date:</strong> ${escapeHtml(dateKey)}`;
+    }
+    customTaskModal.classList.add('open');
+    setTimeout(() => customTaskText.focus(), 50);
+  }
+
+  function closeCustomTaskModal() { customTaskModal.classList.remove('open'); }
+
+  customTaskClose.addEventListener('click', closeCustomTaskModal);
+  customTaskCancel.addEventListener('click', closeCustomTaskModal);
+  customTaskModal.addEventListener('click', (e) => { if (e.target === customTaskModal) closeCustomTaskModal(); });
+
+  customTaskSave.addEventListener('click', () => {
+    const text = (customTaskText.value || '').trim();
+    if (!text) { customTaskText.focus(); return; }
+    const date = customTaskDate.value || customTaskTarget.date;
+    const list = loadCustomTasks();
+    list.push({
+      id:            newCustomTaskId(),
+      ownerRole:     CURRENT_ROLE_KEY,
+      scheduledDate: date,
+      text:          text,
+      eventId:       customTaskTarget.eventId,
+      createdAt:     new Date().toISOString(),
+    });
+    saveCustomTasks(list);
+    closeCustomTaskModal();
+    buildDays();
+    renderAll();
+  });
+
+  // Allow Enter in the text field to submit
+  customTaskText.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') customTaskSave.click();
+  });
 
   // ── Par Check Modal (Lab Supply + Medtronic) ─────────────────────
   const parModal        = document.getElementById('par-modal');

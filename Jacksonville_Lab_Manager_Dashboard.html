@@ -1,0 +1,3902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jacksonville Bioskills Lab — Manager Dashboard</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    a { color: inherit; }
+
+    /* ─── Header ────────────────────────────────────────────────────── */
+    header {
+      background: #003da5;
+      padding: 24px 40px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    header .logo-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    header .title-block h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.2px;
+      margin-bottom: 4px;
+    }
+    header .title-block .location {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 8px;
+    }
+    header .title-block .contacts {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.55);
+    }
+    header .contacts a {
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* ─── Toolbar ───────────────────────────────────────────────────── */
+    .toolbar {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .toolbar .progress-pill {
+      background: #fff;
+      border: 1.5px solid #e0e6f0;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.88rem;
+      color: #1a1a2e;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toolbar .progress-pill .bar-track {
+      width: 140px;
+      height: 7px;
+      background: #eef1f6;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .toolbar .progress-pill .bar-fill {
+      height: 100%;
+      background: #2e7d32;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      background: #fff;
+      border: 1.5px solid #d0d8e8;
+      color: #003da5;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: #eef2fb; border-color: #003da5; }
+    .btn.primary {
+      background: #003da5;
+      color: #fff;
+      border-color: #003da5;
+    }
+    .btn.primary:hover { background: #0050d0; }
+
+    /* ─── Main Layout ───────────────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ─── Today Banner ──────────────────────────────────────────────── */
+    .today-banner {
+      background: linear-gradient(135deg, #003da5 0%, #0050d0 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 22px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 18px rgba(0, 61, 165, 0.18);
+    }
+    .today-banner h2 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 6px;
+    }
+    .today-banner .today-date {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .today-banner .today-summary {
+      font-size: 0.92rem;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    /* ─── Day Card ──────────────────────────────────────────────────── */
+    .day-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 18px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+    .day-card.is-today {
+      border: 2px solid #003da5;
+      box-shadow: 0 4px 16px rgba(0, 61, 165, 0.15);
+    }
+    .day-card.is-past {
+      opacity: 0.6;
+    }
+    .day-card.is-empty {
+      opacity: 0.45;
+    }
+    .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px;
+      cursor: pointer;
+      user-select: none;
+      background: #fff;
+      border-bottom: 1px solid #eef1f6;
+      transition: background 0.15s;
+    }
+    .day-header:hover { background: #f8fafd; }
+    .day-card.collapsed .day-header { border-bottom-color: transparent; }
+    .day-card.collapsed .day-body { display: none; }
+    .day-header .day-left {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .day-header .day-dow {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #888;
+    }
+    .day-header.is-today-header .day-dow {
+      color: #003da5;
+    }
+    .day-header .day-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .day-header .day-meta {
+      font-size: 0.82rem;
+      color: #777;
+    }
+    .day-header .day-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .day-header .count-pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #eef2fb;
+      color: #003da5;
+    }
+    .day-header .count-pill.complete {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .day-header .chev {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.2s;
+      color: #999;
+    }
+    .day-card.collapsed .chev { transform: rotate(-90deg); }
+
+    .day-body {
+      padding: 14px 22px 20px;
+    }
+
+    /* ─── Event Block (informational, e.g. "Lab Closed") ────────────── */
+    .event-info {
+      background: #f8fafd;
+      border: 1px dashed #c4d0ea;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .event-info .info-icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: #c4d0ea;
+      color: #003da5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* ─── Event Group ───────────────────────────────────────────────── */
+    .event-group {
+      border-left: 3px solid #003da5;
+      padding: 10px 14px 10px 16px;
+      margin-bottom: 14px;
+      background: #fafcff;
+      border-radius: 0 8px 8px 0;
+    }
+    .event-group.type-specimen { border-left-color: #c2185b; }
+    .event-group.type-cleanup { border-left-color: #00838f; }
+    .event-group.type-training { border-left-color: #6a1b9a; }
+    .event-group.type-rd { border-left-color: #2e7d32; }
+    .event-group.type-other { border-left-color: #b0b8c5; }
+
+    .event-group .event-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-group .event-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #003da5;
+      color: #fff;
+    }
+    .event-group.type-specimen .event-tag { background: #c2185b; }
+    .event-group.type-cleanup .event-tag { background: #00838f; }
+    .event-group.type-training .event-tag { background: #6a1b9a; }
+    .event-group.type-rd .event-tag { background: #2e7d32; }
+    .event-group.type-other .event-tag { background: #b0b8c5; }
+
+    .event-group .event-meta {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .event-group .relative-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #fff3cd;
+      color: #856404;
+      margin-left: 6px;
+    }
+    .event-group .relative-tag.day-of {
+      background: #ffe0e0;
+      color: #c1281a;
+    }
+    .event-group .relative-tag.after {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    /* ─── Task ──────────────────────────────────────────────────────── */
+    .daily-ops-block {
+      background: #f4f6f9;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+    .daily-ops-block .ops-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 6px;
+    }
+
+    .task-list { display: flex; flex-direction: column; gap: 4px; }
+    .task {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 4px;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 6px;
+      transition: background 0.1s;
+    }
+    .task:hover { background: rgba(0, 61, 165, 0.04); }
+    .task input[type="checkbox"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.7px solid #c4d0ea;
+      border-radius: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .task input[type="checkbox"]:hover { border-color: #003da5; }
+    .task input[type="checkbox"]:checked {
+      background: #003da5;
+      border-color: #003da5;
+    }
+    .task input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 5px;
+      height: 9px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .task .task-text {
+      font-size: 0.9rem;
+      color: #2c2c44;
+      line-height: 1.45;
+      flex: 1;
+    }
+    .task.done .task-text {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    /* ─── No events / empty state ──────────────────────────────────── */
+    .empty-state-text {
+      font-size: 0.85rem;
+      color: #aaa;
+      font-style: italic;
+      padding: 4px 0;
+    }
+
+    /* ─── Skeleton / Loading ────────────────────────────────────────── */
+    .skeleton-day {
+      height: 64px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #e8edf5 25%, #f4f6fb 50%, #e8edf5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-card {
+      background: #fff8f8;
+      border: 1.5px solid #f4c4c4;
+      border-radius: 12px;
+      padding: 20px 24px;
+      color: #c1281a;
+      font-size: 0.95rem;
+    }
+
+    footer {
+      text-align: center;
+      color: #999;
+      font-size: 0.8rem;
+      padding: 24px 0 40px;
+    }
+
+    /* ─── Filter chips ──────────────────────────────────────────────── */
+    .filter-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1.5px solid #d0d8e8;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip:hover { border-color: #003da5; color: #003da5; }
+    .chip.active {
+      background: #003da5;
+      border-color: #003da5;
+      color: #fff;
+    }
+
+    /* ─── Restock Email Button ──────────────────────────────────────── */
+    .btn-restock {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1.5px solid #c4d0ea;
+      color: #003da5;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+      transition: all 0.15s;
+    }
+    .btn-restock:hover { background: #eef2fb; border-color: #003da5; }
+    .btn-restock svg { flex-shrink: 0; }
+
+    /* ─── Modal ─────────────────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 25, 40, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      max-width: 880px;
+      width: 100%;
+      max-height: 92vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #eef1f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #003da5;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #999;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: #1a1a2e; }
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-body label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #555;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-top: 12px;
+      margin-bottom: 5px;
+    }
+    .modal-body input[type="text"],
+    .modal-body textarea {
+      width: 100%;
+      border: 1.5px solid #d0d8e8;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      color: #1a1a2e;
+      font-family: inherit;
+      outline: none;
+    }
+    .modal-body textarea {
+      min-height: 280px;
+      font-family: ui-monospace, Menlo, Monaco, "Courier New", monospace;
+      font-size: 0.83rem;
+      line-height: 1.55;
+      resize: vertical;
+    }
+    .modal-body input:focus, .modal-body textarea:focus { border-color: #003da5; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #eef1f6;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── Items table & catalog picker ─────────────────────────────── */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 0.85rem;
+    }
+    .items-table th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #888;
+      padding: 6px 6px;
+      border-bottom: 1px solid #eef1f6;
+    }
+    .items-table td {
+      padding: 7px 6px;
+      border-bottom: 1px solid #f4f6f9;
+      vertical-align: top;
+    }
+    .items-table input[type="number"],
+    .items-table input.unit {
+      width: 100%;
+      border: 1px solid #d0d8e8;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+    }
+    .items-table input[type="number"] { max-width: 70px; }
+    .items-table input.unit { max-width: 70px; }
+    .items-table .pn-cell { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; color: #003da5; font-weight: 600; }
+    .items-table .desc-cell { color: #2c2c44; }
+    .items-table .remove-btn {
+      background: none;
+      border: none;
+      color: #c1281a;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .items-table .remove-btn:hover { color: #800; }
+    .items-empty {
+      padding: 14px;
+      text-align: center;
+      color: #aaa;
+      font-style: italic;
+      border: 1px dashed #e0e6f0;
+      border-radius: 8px;
+      margin: 6px 0;
+    }
+
+    /* Picker */
+    .picker-wrap {
+      margin-top: 16px;
+      padding: 14px 14px 10px;
+      background: #f8fafd;
+      border: 1px solid #eef1f6;
+      border-radius: 10px;
+    }
+    .picker-wrap .picker-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .picker-input {
+      width: 100%;
+      border: 1.5px solid #d0d8e8;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .picker-input:focus { border-color: #003da5; }
+    .picker-results {
+      margin-top: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      border: 1px solid #eef1f6;
+      border-radius: 8px;
+      background: #fff;
+      display: none;
+    }
+    .picker-results.open { display: block; }
+    .picker-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      cursor: pointer;
+      gap: 12px;
+      border-bottom: 1px solid #f4f6f9;
+      font-size: 0.85rem;
+    }
+    .picker-row:hover { background: #eef2fb; }
+    .picker-row:last-child { border-bottom: none; }
+    .picker-row .pn { font-family: ui-monospace, Menlo, monospace; color: #003da5; font-weight: 600; flex-shrink: 0; min-width: 110px; }
+    .picker-row .info { flex: 1; }
+    .picker-row .info .desc { color: #2c2c44; }
+    .picker-row .info .meta { color: #999; font-size: 0.75rem; margin-top: 2px; }
+    .picker-row .add-btn {
+      flex-shrink: 0;
+      background: #003da5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .picker-row .add-btn:hover { background: #0050d0; }
+    .picker-empty { padding: 14px; color: #aaa; font-style: italic; text-align: center; }
+
+    .timing-chip:hover { border-color: #003da5 !important; color: #003da5 !important; }
+    .timing-chip.active {
+      background: #003da5 !important;
+      color: #fff !important;
+      border-color: #003da5 !important;
+    }
+
+    /* ─── View switcher (master only) ─────────────────────────────── */
+    .view-switcher {
+      display: inline-flex !important;
+      background: #fff;
+      border: 1.5px solid #d0d8e8;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 0;
+    }
+    .view-tab {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: #555;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: #003da5; }
+    .view-tab.active { background: #003da5; color: #fff; }
+
+    /* ─── Team Status view cards ──────────────────────────────────── */
+    .ts-event-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+    .ts-event-card.is-soon { border: 2px solid #003da5; }
+    .ts-event-header {
+      padding: 18px 24px 14px;
+      border-bottom: 1px solid #eef1f6;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+    }
+    .ts-event-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      flex: 1;
+      min-width: 240px;
+    }
+    .ts-event-title .ts-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: #003da5;
+      color: #fff;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .ts-event-meta {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .ts-event-meta .when {
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+    .ts-event-meta .when.is-soon { color: #003da5; }
+    .ts-event-meta .when.past { color: #999; }
+    .ts-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .ts-progress-bar {
+      flex: 1;
+      height: 7px;
+      background: #eef1f6;
+      border-radius: 4px;
+      overflow: hidden;
+      max-width: 220px;
+    }
+    .ts-progress-fill { height: 100%; background: #2e7d32; transition: width 0.3s; }
+
+    .ts-columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0;
+    }
+    .ts-col {
+      padding: 14px 18px 18px;
+      border-right: 1px solid #eef1f6;
+    }
+    .ts-col:last-child { border-right: none; }
+    .ts-col-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .ts-col-header .role-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+    .ts-col-header .col-progress {
+      margin-left: auto;
+      font-size: 0.78rem;
+      color: #888;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .ts-col-header .col-progress.complete { color: #2e7d32; }
+    .ts-col-empty {
+      font-size: 0.82rem;
+      color: #aaa;
+      font-style: italic;
+      padding: 6px 0;
+    }
+
+    .ts-no-events {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 30px;
+      text-align: center;
+      color: #888;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Quick assign Latisha button (master view) */
+    .ts-quick-actions, .day-quick-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .btn-assign-latisha {
+      background: #fff;
+      border: 1.5px solid #d0d8e8;
+      color: #6a1b9a;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-assign-latisha:hover { background: #f3e5f5; border-color: #6a1b9a; }
+    .btn-assign-latisha.assigned {
+      background: #6a1b9a;
+      color: #fff;
+      border-color: #6a1b9a;
+    }
+
+    @media (max-width: 700px) {
+      header { padding: 20px 16px 18px; }
+      header .title-block h1 { font-size: 1.2rem; }
+      .toolbar { padding: 0 14px; gap: 10px; }
+      .toolbar .actions { width: 100%; justify-content: flex-start; }
+      .toolbar .progress-pill { width: 100%; justify-content: space-between; }
+      .toolbar .progress-pill .bar-track { width: 100px; }
+      main { padding: 0 12px 40px; }
+      .day-header { padding: 14px 16px; }
+      .day-body { padding: 12px 14px 16px; }
+      .today-banner { padding: 18px 20px; }
+      .today-banner .today-date { font-size: 1.2rem; }
+
+      /* Team Status responsive */
+      .ts-event-header { padding: 14px 18px 12px; }
+      .ts-event-title { font-size: 1rem; min-width: 0; }
+      .ts-columns { grid-template-columns: 1fr; }
+      .ts-col { border-right: none; border-bottom: 1px solid #eef1f6; padding: 12px 16px; }
+      .ts-col:last-child { border-bottom: none; }
+
+      /* View tabs collapse to icons-only on mobile */
+      .view-tab { padding: 5px 10px; font-size: 0.8rem; }
+
+      /* Modal padding */
+      .modal-backdrop { padding: 12px; }
+      .modal-body { padding: 16px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ADMIN CONFIG
+     The dashboard pulls every event from the Jacksonville Lab
+     sub-calendar (today + 30 days) and auto-generates a checklist
+     per event based on its type.
+════════════════════════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// ROLES — different links for different people
+// Each teammate gets a URL with ?role=<name>. Their dashboard hides
+// sections / tasks that aren't theirs. Master view (no role param)
+// shows everything with role badges so Josh can see who owns what.
+// ═══════════════════════════════════════════════════════════════════
+const ROLES = {
+  master: {
+    name:               "Master view",
+    label:              "Josh Register",
+    color:              "#003da5",
+    showAllTasks:       true,
+    showRoleBadges:     true,
+    showDailyOps:       true,
+    showParCheck:       true,
+    showCadaverLog:     true,
+    showRestockEmail:   true,
+    eventFilterKey:     null,           // shows every event
+  },
+  anamaria: {
+    name:               "Ana Maria Rojas",
+    label:              "Specimens & Meeting Planning",
+    color:              "#c2185b",
+    taskRoleFilter:     "anamaria",     // only tasks tagged anamaria (or universal)
+    showDailyOps:       false,
+    showParCheck:       false,
+    showCadaverLog:     false,
+    showRestockEmail:   false,
+  },
+  bert: {
+    name:               "Bert Clark",
+    label:              "Lab Manager",
+    color:              "#00838f",
+    taskRoleFilter:     "bert",
+    showDailyOps:       true,
+    showParCheck:       true,
+    showCadaverLog:     true,
+    showRestockEmail:   true,
+  },
+  latisha: {
+    name:               "Latisha",
+    label:              "Contractor — Assigned Events",
+    color:              "#6a1b9a",
+    eventFilterKey:     "latisha",      // only events whose title contains "latisha"
+    showDailyOps:       false,
+    showParCheck:       false,
+    showCadaverLog:     false,
+    showRestockEmail:   false,
+  },
+};
+
+// Read role from URL (?role=anamaria) — default to master
+function getCurrentRoleKey() {
+  const p = new URLSearchParams(window.location.search).get('role') || 'master';
+  return ROLES[p] ? p : 'master';
+}
+const CURRENT_ROLE_KEY = getCurrentRoleKey();
+const CURRENT_ROLE = ROLES[CURRENT_ROLE_KEY];
+
+// Read view from URL (?view=team) — default to day. Team Status only
+// makes sense when more than one person's tasks are visible (i.e. master).
+function getCurrentView() {
+  const p = new URLSearchParams(window.location.search).get('view') || 'day';
+  if (p === 'team' && CURRENT_ROLE_KEY !== 'master') return 'day';
+  return ['day', 'team'].includes(p) ? p : 'day';
+}
+const CURRENT_VIEW = getCurrentView();
+
+// Helper: build a URL preserving role + flipping view
+function buildUrl(role, view) {
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const params = [];
+  if (role && role !== 'master') params.push('role=' + role);
+  if (view && view !== 'day') params.push('view=' + view);
+  return params.length ? `${base}?${params.join('&')}` : base;
+}
+
+// Universal task → tasks shown for all roles when there's no roles array.
+// Tasks with a `roles` array are only shown to those roles + master.
+function isTaskVisibleForRole(task) {
+  if (CURRENT_ROLE.showAllTasks) return true;
+  if (!task.roles || !task.roles.length) return true;     // universal
+  return task.roles.includes(CURRENT_ROLE.taskRoleFilter);
+}
+
+// Event filter — Latisha sees only events where her name appears in title
+function isEventVisibleForRole(evt) {
+  const filterKey = CURRENT_ROLE.eventFilterKey;
+  if (!filterKey) return true;
+  const title = (evt.title || '').toLowerCase();
+  return title.includes(filterKey);
+}
+
+const ADMIN_CONFIG = {
+  calendarLink:        "https://teamup.com/c/mwb2ov/medtronic-ent-education",
+  teamupCalendarKey:   "ks5ec5xvdnuwdstp8b",
+  teamupApiToken:      "aa5e53d3b76df21cf80372c71c76da3e5c47ed91bc3f7e52c988b8ca1989cfbf",
+  jacksonvilleSubcalId: 13225880,        // "Med Ed > Jacksonville Lab"
+  daysAhead:           30,
+  storageNamespace:    "jaxLabDashboard.v1",
+
+  // Event titles to hide from this dashboard (case-insensitive exact match).
+  // "Open ENT Immersion Lab" entries are placeholders managed by the rep
+  // booking app — they only become real labs once a rep claims one and the
+  // title is updated. Add other placeholder markers here as needed.
+  hiddenEventTitles: [
+    "open ent immersion lab",
+  ],
+
+  // ── Restocking Email ─────────────────────────────────────────────
+  restockEmail: {
+    to:      "customerservice@medtronic.com",   // ← REPLACE with actual customer service address
+    cc:      "josh.a.register@medtronic.com",
+    fromLab: "Jacksonville Bioskills Lab",
+    address: "6743 Southpoint Drive North, Jacksonville, Florida 32216",
+    contactName:  "Josh Register",
+    contactEmail: "josh.a.register@medtronic.com",
+    contactPhone: "",                             // optional
+  },
+};
+</script>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TASK TEMPLATES
+     Each event is classified into one of these categories. The tasks
+     below are placed on calendar days relative to the event date
+     (offset = number of days *before* the event; 0 = event day;
+     negative numbers = *after* the event).
+     Edit freely — the dashboard will pick up changes on next reload.
+════════════════════════════════════════════════════════════════════ -->
+<script>
+const TASK_TEMPLATES = {
+  // Full lab session: ENT Immersion Lab, Dr. X, R&D Lab, dry run, training, etc.
+  lab: {
+    label: "Lab Session",
+    cssClass: "type-lab",
+    tasks: [
+      { id: "confirm-attendance", offset: 7,  text: "Confirm surgeon & rep attendance (call/email)",            roles: ["anamaria"] },
+      { id: "send-confirmation",  offset: 7,  text: "Send confirmation email — parking, address, agenda",       roles: ["anamaria"] },
+      { id: "confirm-specimens",  offset: 5,  text: "Confirm specimen order with Science Care / Meri",          roles: ["anamaria"] },
+      { id: "verify-trays",       offset: 3,  text: "Verify instrument tray inventory & sterilization",         roles: ["bert"] },
+      { id: "test-av",            offset: 3,  text: "Test A/V & streaming setup",                                roles: ["bert"] },
+      { id: "scan-specimens",     offset: 2,  text: "Scan specimens (CT for navigation registration)",          roles: ["bert"] },
+      { id: "receive-specimens",  offset: 1,  text: "Receive & log specimens into freezer",                     roles: ["bert"] },
+      { id: "setup-room",         offset: 1,  text: "Set up lab room — tables, draping, PPE, supplies",         roles: ["bert"] },
+      { id: "print-handouts",     offset: 1,  text: "Print agenda & evaluation forms",                          roles: ["anamaria"] },
+      { id: "greet-attendees",    offset: 0,  text: "Greet attendees" }, // visible to all
+      { id: "run-session",        offset: 0,  text: "Run lab session — capture before/after photos",            roles: ["bert"] },
+      { id: "decontaminate",      offset: -1, text: "Decontaminate & deep-clean lab room",                       roles: ["bert"] },
+      { id: "specimen-disposal",  offset: -1, text: "Specimen disposal per protocol",                            roles: ["bert"] },
+      { id: "restock",            offset: -1, text: "Restock consumables — gloves, drapes, blades",              roles: ["bert"] },
+      { id: "send-thankyou",      offset: -1, text: "Send thank-you / feedback survey to attendees",             roles: ["anamaria"] },
+      { id: "submit-report",      offset: -2, text: "Submit lab report & update inventory log",                  roles: ["bert"] },
+    ],
+  },
+
+  // Training-room hold (no cadaver): "Hold training room", "Touch Surgery dry run (no cadaver)"
+  training: {
+    label: "Training / Hold",
+    cssClass: "type-training",
+    tasks: [
+      { id: "confirm-host",     offset: 2, text: "Confirm host / lead with details",                  roles: ["anamaria"] },
+      { id: "room-setup",       offset: 1, text: "Set up training room — chairs, A/V, refreshments",  roles: ["bert"] },
+      { id: "test-av",          offset: 1, text: "Test A/V, streaming, screen share",                  roles: ["bert"] },
+      { id: "greet-attendees",  offset: 0, text: "Greet attendees" },
+      { id: "tidy-up",          offset: 0, text: "Tidy room post-session",                             roles: ["bert"] },
+    ],
+  },
+
+  // Specimen delivery: "Science Care delivering", "Meri delivering", etc.
+  specimenDelivery: {
+    label: "Specimen Delivery",
+    cssClass: "type-specimen",
+    tasks: [
+      { id: "confirm-eta",         offset: 0, text: "Confirm courier ETA",                                              roles: ["anamaria","bert"] },
+      { id: "verify-count",        offset: 0, text: "Verify specimen count & ID tags on arrival",                       roles: ["bert"] },
+      { id: "log-into-freezer",    offset: 0, text: "Log specimens into freezer with chain-of-custody form",            roles: ["bert"] },
+      { id: "sign-receipt",        offset: 0, text: "Sign delivery receipt",                                              roles: ["bert"] },
+      { id: "update-cadaver-log",  offset: 0, text: "Update cadaver log — record intake details", action: "cadaverLog", roles: ["bert"] },
+    ],
+  },
+
+  // Specimen pickup: "Science Care will pick up", "pick up of tissue"
+  specimenPickup: {
+    label: "Specimen Pickup",
+    cssClass: "type-specimen",
+    tasks: [
+      { id: "pull-specimens",      offset: 0, text: "Pull specimens from freezer ~1 hr before pickup",                       roles: ["bert"] },
+      { id: "verify-manifest",     offset: 0, text: "Verify count matches pickup manifest",                                  roles: ["bert"] },
+      { id: "sign-pickup",         offset: 0, text: "Sign chain-of-custody pickup receipt",                                  roles: ["bert"] },
+      { id: "update-cadaver-log",  offset: 0, text: "Update cadaver log — record disposal / chain-of-custody", action: "cadaverLog", roles: ["bert"] },
+    ],
+  },
+
+  // Cleanup-only: "Cleanup"
+  cleanup: {
+    label: "Cleanup",
+    cssClass: "type-cleanup",
+    tasks: [
+      { id: "decontaminate",  offset: 0, text: "Decontaminate lab room — surfaces, drains, instruments", roles: ["bert"] },
+      { id: "autoclave",      offset: 0, text: "Run autoclave for instruments",                            roles: ["bert"] },
+      { id: "restock-ppe",    offset: 0, text: "Restock PPE, gloves, drapes",                              roles: ["bert"] },
+      { id: "update-log",     offset: 0, text: "Update inventory & cleanup log",                            roles: ["bert"] },
+    ],
+  },
+
+  // Install / setup: "Timeline install", "Scans/Setup"
+  install: {
+    label: "Install / Setup",
+    cssClass: "type-rd",
+    tasks: [
+      { id: "confirm-vendor",  offset: 1, text: "Confirm vendor / installer arrival window", roles: ["bert"] },
+      { id: "clear-area",      offset: 0, text: "Clear & prep installation area",            roles: ["bert"] },
+      { id: "supervise",       offset: 0, text: "Supervise install & sign off when complete",roles: ["bert"] },
+      { id: "test-equipment",  offset: 0, text: "Test equipment / system after install",     roles: ["bert"] },
+    ],
+  },
+
+  // R&D / video recording / scans / demos
+  rd: {
+    label: "R&D / Recording",
+    cssClass: "type-rd",
+    tasks: [
+      { id: "confirm-team",      offset: 2, text: "Confirm R&D / engineering team & equipment list",                  roles: ["bert"] },
+      { id: "prep-station",      offset: 1, text: "Prep recording / R&D station (lighting, cameras, instruments)",     roles: ["bert"] },
+      { id: "test-recording",    offset: 0, text: "Test recording / capture setup before kickoff",                     roles: ["bert"] },
+      { id: "supervise-session", offset: 0, text: "Supervise session — log any issues or footage",                     roles: ["bert"] },
+      { id: "archive-output",    offset: -1, text: "Archive footage / data and notify owner",                          roles: ["bert"] },
+    ],
+  },
+
+  // Closed days / Holds / informational only
+  closed: {
+    label: "Closed",
+    cssClass: "type-other",
+    tasks: [],
+  },
+  hold: {
+    label: "Hold (Tentative)",
+    cssClass: "type-other",
+    tasks: [],
+  },
+  remote: {
+    label: "Remote / Off-Site",
+    cssClass: "type-other",
+    tasks: [],
+  },
+  meeting: {
+    label: "Meeting",
+    cssClass: "type-other",
+    tasks: [
+      { id: "prep-agenda", offset: 0, text: "Review agenda & prep notes" },
+    ],
+  },
+
+  // Catch-all
+  other: {
+    label: "Event",
+    cssClass: "type-other",
+    tasks: [
+      { id: "review-event", offset: 0, text: "Review event details & coordinate as needed" },
+    ],
+  },
+
+  // Synthetic category used by the inventory par check → Customer Service flow
+  inventory: {
+    label: "Inventory Par Restock",
+    cssClass: "type-other",
+    tasks: [],
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// COST CENTERS — by District Sales Manager
+// Disposables ordered after a lab event are charged against the DSM
+// who owns the rep on that booking. The dashboard auto-detects the
+// DSM by scanning the event title for any of these names; the lab
+// manager can override in the restock modal before sending.
+//
+// "Med Ed" is the fallback for non-rep events (R&D, training, etc.).
+// ═══════════════════════════════════════════════════════════════════
+const DSMS = [
+  { name: "Med Ed",            cc: "165929" },   // default for non-rep events
+  { name: "Allison Lopresti",  cc: "166257" },
+  { name: "Timothy Jordain",   cc: "166058" },
+  { name: "Dana Maradie",      cc: "163039" },
+  { name: "Martin Bowman",     cc: "166254" },
+  { name: "Justin Adley",      cc: "163038" },
+  { name: "Jose Rodriguez",    cc: "166054" },
+  { name: "Leslie Anderson",   cc: "166113" },
+  { name: "Jim Tansey",        cc: "166066" },
+  { name: "Jared Kraeling",    cc: "166096" },
+  { name: "J.R. Crain",        cc: "163037" },
+  { name: "Alicia Slone",      cc: "166255" },
+  { name: "Brian Daigre",      cc: "163034" },
+  { name: "Pete Paganucci",    cc: "166059" },
+  { name: "Jake Proffit",      cc: "166052" },
+  { name: "Matthew Anderson",  cc: "166256" },
+  { name: "Lindsey Rainey",    cc: "166067" },
+  { name: "Ross Hewitt",       cc: "166103" },
+];
+
+// Default DSM (used when no name detected) — Med Ed
+const DEFAULT_DSM = "Med Ed";
+
+// Per-event-category fallback DSM (used when title scan finds no match).
+// Most non-rep event types should land on Med Ed; lab/training fall back
+// to Med Ed too unless a rep manager is detected from the title.
+const CATEGORY_DEFAULT_DSM = {
+  lab:              "Med Ed",
+  training:         "Med Ed",
+  rd:               "Med Ed",
+  specimenDelivery: "Med Ed",
+  specimenPickup:   "Med Ed",
+  cleanup:          "Med Ed",
+  install:          "Med Ed",
+  meeting:          "Med Ed",
+  remote:           "Med Ed",
+  hold:             "Med Ed",
+  closed:           "Med Ed",
+  other:            "Med Ed",
+};
+
+function detectDsmFromTitle(title) {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  // Try to match any DSM name (full name first, then last name as fallback)
+  // Skip "Med Ed" — it's a fallback, never auto-detected from title
+  const candidates = DSMS.filter(d => d.name !== "Med Ed");
+  for (const d of candidates) {
+    if (t.includes(d.name.toLowerCase())) return d.name;
+  }
+  // Last-name only fallback (helps when title says "Rep Rainey")
+  for (const d of candidates) {
+    const last = d.name.split(/\s+/).slice(-1)[0].toLowerCase();
+    // Skip very short last names that could collide with words
+    if (last.length < 5) continue;
+    // Match as whole word
+    const re = new RegExp("\\b" + last.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "\\b", 'i');
+    if (re.test(title)) return d.name;
+  }
+  return null;
+}
+
+function dsmByName(name) {
+  return DSMS.find(d => d.name === name) || DSMS.find(d => d.name === DEFAULT_DSM);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MEDTRONIC ENT PRODUCT CATALOG (FY24 V5)
+// 189 part numbers extracted from the official catalog. The picker
+// in the restock email modal searches across pn / desc / category.
+// To add or correct entries, edit this list directly.
+// ═══════════════════════════════════════════════════════════════════
+const MEDTRONIC_CATALOG = [
+  { pn: "1852000", desc: "Endo-Scrub™ 2 foot switch", cat: "Endoscopy products", sub: "Endo-Scrub™ 2 lens cleaning system accessories" },
+  { pn: "1912030", desc: "Endo-Scrub 2 tubing", cat: "Endoscopy products", sub: "Endo-Scrub™ 2 lens cleaning system accessories" },
+  { pn: "1991015", desc: "Endo-Scrub finger switch", cat: "Endoscopy products", sub: "Endo-Scrub™ 2 lens cleaning system accessories" },
+  { pn: "1883080EM", desc: "3.0 mm Quadcut™ straight rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1883480EM", desc: "3.4 mm Quadcut™ straight rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1884006EM", desc: "4.0 mm RAD™ 40 curved rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1884012EM", desc: "4.0 mm RAD™ 12 curved rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1884080EM", desc: "4.0 mm Tricut™ straight rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1884380EM", desc: "4.3 mm Quadcut™ straight rotatable blade with automated EM tracking", cat: "Powered surgical equipment", sub: "EM-tracked blades" },
+  { pn: "1883080HRE", desc: "3.0 mm Quadcut™ blade for StraightShot M4/M5", cat: "Powered surgical equipment", sub: "Quadcut blades" },
+  { pn: "1883480HRE", desc: "3.4 mm Quadcut™ blade for StraightShot M4/M5", cat: "Powered surgical equipment", sub: "Quadcut blades" },
+  { pn: "1884380HR", desc: "4.3 mm Quadcut™ blade for StraightShot M4/M5", cat: "Powered surgical equipment", sub: "Quadcut blades" },
+  { pn: "1883040BLC", desc: "30K bullet cutting bur, 3.0 mm, 40°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1883040BLD", desc: "30K bullet diamond bur, 3.0 mm, 40°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1883040BRC", desc: "30K frontal finesse barrel cutting bur, 3.0 mm, 40°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1883070BLC", desc: "30K bullet cutting bur, 3.0 mm, 70°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1883070BLD", desc: "30K bullet diamond bur, 3.0 mm, 70°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1883655BRC", desc: "30K barrel cutting bur, 3.6 mm, 55°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1884015RTD", desc: "30K tapered diamond choanal atresia bur, 4.0 mm, 15°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1884040RTC", desc: "30K reverse tapered cutting bur, 4.0 mm, 40°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1884070RTC", desc: "30K reverse tapered cutting bur, 4.0 mm, 70°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1884070RTD", desc: "30K reverse tapered diamond bur, 4.0 mm, 70°, 13 cm", cat: "Powered surgical equipment", sub: "30K burs" },
+  { pn: "1882923", desc: "Subglottic blade", cat: "Powered surgical equipment", sub: "Airway blades, non-rotatable" },
+  { pn: "1884005HRE", desc: "Straight sinus blade, M4 rotatable", cat: "Powered surgical equipment", sub: "Straight sinus blades, M4 rotatable" },
+  { pn: "1883264HS", desc: "Straight sinus bur, high speed", cat: "Powered surgical equipment", sub: "Straight sinus burs" },
+  { pn: "1894515", desc: "XPS Nexus™ IV pole", cat: "Powered surgical equipment", sub: "XPS Nexus™ ENT power console" },
+  { pn: "1894520", desc: "XPS Nexus™ foot control", cat: "Powered surgical equipment", sub: "XPS Nexus™ ENT power console" },
+  { pn: "1895522", desc: "StraightShot™ M4 tubing", cat: "Powered surgical equipment", sub: "StraightShot M4/M5 accessories" },
+  { pn: "1895522T", desc: "StraightShot™ M4/M5 irrigation tubing for blades and burs (5 each)", cat: "Powered surgical equipment", sub: "Irrigation tubing" },
+  { pn: "1898075", desc: "StraightShot™ M4 instrument tray", cat: "Powered surgical equipment", sub: "StraightShot M4/M5 accessories" },
+  { pn: "1899076", desc: "StraightShot™ M5 instrument tray", cat: "Powered surgical equipment", sub: "StraightShot™ M5 Microdebrider" },
+  { pn: "1913001", desc: "Hydrodebrider™ console", cat: "Powered surgical equipment", sub: "Hydrodebrider" },
+  { pn: "1914001", desc: "Hydrodebrider™ standard handpiece", cat: "Powered surgical equipment", sub: "Hydrodebrider" },
+  { pn: "1921002", desc: "Hydrodebrider™ frontal handpiece", cat: "Powered surgical equipment", sub: "Hydrodebrider" },
+  { pn: "3318604E", desc: "IPC suction-irrigation system", cat: "Powered surgical equipment", sub: "IPC™ suction irrigation set with IntelliFlow™ remote control" },
+  { pn: "1894510", desc: "XPS Nexus™ console", cat: "Office-based solutions", sub: "XPS Nexus™ ENT power console" },
+  { pn: "1895820", desc: "Power cord, standard, North America, 3 M", cat: "Office-based solutions", sub: "IPC™ system power cords" },
+  { pn: "1897510", desc: "IPC basket", cat: "Office-based solutions", sub: "Integrated Power Console (IPC™) system" },
+  { pn: "1897821", desc: "Power cord, standard, North America, 6 M", cat: "Office-based solutions", sub: "IPC™ system power cords" },
+  { pn: "1898001", desc: "Integrated power console", cat: "Office-based solutions", sub: "Integrated Power Console (IPC™) system" },
+  { pn: "1898200T", desc: "StraightShot M4 high-speed microdebrider with SureTrack", cat: "Office-based solutions", sub: "StraightShot™ M4 microdebrider handpiece" },
+  { pn: "1898430", desc: "Integrated power console multifunction foot pedal", cat: "Office-based solutions", sub: "Integrated Power Console (IPC™) system" },
+  { pn: "1898600", desc: "IPC cart", cat: "Office-based solutions", sub: "Integrated Power Console (IPC™) system" },
+  { pn: "1899200", desc: "StraightShot M5 microdebrider", cat: "Office-based solutions", sub: "StraightShot™ M5 microdebrider" },
+  { pn: "1960100", desc: "HydroCleanse sinus wash delivery system", cat: "Office-based solutions", sub: "HydroCleanse™ sinus wash delivery system" },
+  { pn: "1830507MAX", desc: "Balloon seeker, EM maxillary balloon 5.0 mm x 7.0 mm", cat: "Office-based solutions", sub: "Maxillary balloons" },
+  { pn: "1830607MAX", desc: "Balloon seeker, EM maxillary balloon 6.0 mm x 7.0 mm", cat: "Office-based solutions", sub: "Maxillary balloons" },
+  { pn: "1830707MAX", desc: "Balloon seeker, EM maxillary balloon 7.0 mm x 7.0 mm", cat: "Office-based solutions", sub: "Maxillary balloons" },
+  { pn: "1830517FRT", desc: "Balloon seeker, EM frontal balloon 5.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Frontal balloons" },
+  { pn: "1830617FRT", desc: "Balloon seeker, EM frontal balloon 6.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Frontal balloons" },
+  { pn: "1830717FRT", desc: "Balloon seeker, EM frontal balloon 7.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Frontal balloons" },
+  { pn: "1830517SPH", desc: "Balloon seeker, EM sphenoid balloon 5.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Sphenoid balloons" },
+  { pn: "1830617SPH", desc: "Balloon seeker, EM sphenoid balloon 6.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Sphenoid balloons" },
+  { pn: "1830717SPH", desc: "Balloon seeker, EM sphenoid balloon 7.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "Sphenoid balloons" },
+  { pn: "1830616EST", desc: "NuVent™ Eustachian tube dilation balloon, 6.0 mm x 16.0 mm", cat: "Office-based solutions", sub: "NuVent™ Eustachian tube dilation balloon" },
+  { pn: "9733445", desc: "Head frame kit", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733446", desc: "Registration probe", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733447", desc: "Straight probe", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733448", desc: "Ostium seeker", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733449", desc: "Straight suction", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733450", desc: "Curved suction, 70°", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733451", desc: "Curved suction, 90°", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733452XOM", desc: "Reusable standard instrument set", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733455", desc: "Instrument tray", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9734306", desc: "Frontal suction, 45°", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9734307", desc: "Frontal suction, 90°", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9734308", desc: "Small straight suction", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9734311", desc: "Elevator", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9734320", desc: "Instrument tray (supplemental)", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9734378XOM", desc: "Supplemental instrument set", cat: "Navigation solutions", sub: "Supplemental instrument set" },
+  { pn: "9735015", desc: "Small standard tip, 14.5 cm", cat: "Navigation solutions", sub: "Malleable suction instruments" },
+  { pn: "9735016", desc: "Medium standard tip, 16.5 cm", cat: "Navigation solutions", sub: "Malleable suction instruments" },
+  { pn: "9735017", desc: "Medium angle tip, 16.5 cm", cat: "Navigation solutions", sub: "Malleable suction instruments" },
+  { pn: "9735018", desc: "Medium ball tip, 16.5 cm", cat: "Navigation solutions", sub: "Malleable suction instruments" },
+  { pn: "9735019", desc: "Large standard tip 20 cm", cat: "Navigation solutions", sub: "Malleable suction instruments" },
+  { pn: "9735669KIT", desc: "StealthStation ENT navigation system with power pack", cat: "Navigation solutions", sub: "StealthStation™ ENT navigation system" },
+  { pn: "9735736", desc: "StealthStation ENT software", cat: "Navigation solutions", sub: "IGS software" },
+  { pn: "9735742", desc: "Stealth™ 3D software", cat: "Navigation solutions", sub: "IGS software" },
+  { pn: "9735894", desc: "Stealth S8 planning station", cat: "Navigation solutions", sub: "Planning station" },
+  { pn: "9735894KIT", desc: "StealthStation ENT planning station kit", cat: "Navigation solutions", sub: "Planning station" },
+  { pn: "9735920", desc: "StealthStation™ planning station ENT software", cat: "Navigation solutions", sub: "IGS software" },
+  { pn: "9735960", desc: "Side emitter", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9736009", desc: "Power pack PS Stealth S8 English only", cat: "Navigation solutions", sub: "Planning station" },
+  { pn: "9736155", desc: "StealthMerge™ software", cat: "Navigation solutions", sub: "IGS software" },
+  { pn: "9731132", desc: "Dynamic reference (DRF) (EM, bone fixation)", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9731831XOM", desc: "Emitter cover, sterile", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9732379", desc: "Imaging protocol", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9732500XOM", desc: "Adhesive pad", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9732501XOM", desc: "Silicone pad", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "9733533XOM", desc: "Instrument tracker, ENT", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9733534XOM", desc: "Patient tracker, ENT", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9734320XOM", desc: "Supplemental instrument tray", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9734691XOM", desc: "Surgeon mouse kit", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9734887XOM", desc: "Axiem™ non-invasive patient tracker", cat: "Navigation solutions", sub: "Optional accessories" },
+  { pn: "9730713", desc: "Sterilization reference sheet", cat: "Navigation solutions", sub: "Reusable standard instrument set" },
+  { pn: "8253075", desc: "NIM 3.0 INTFC 32MA fuse kit", cat: "Nerve monitoring equipment", sub: "NIM™ console fuse kit" },
+  { pn: "8253600", desc: "Patient simulator, universal", cat: "Nerve monitoring equipment", sub: "NIM™ accessories" },
+  { pn: "8220325", desc: "NIM muting probe", cat: "Nerve monitoring equipment", sub: "NIM™ accessories" },
+  { pn: "8225490X", desc: "NIM™ surgeon control probe ball tip", cat: "Nerve monitoring equipment", sub: "Surgeon control probes" },
+  { pn: "8225825X", desc: "NIM™ surgeon control probe prass tip", cat: "Nerve monitoring equipment", sub: "Surgeon control probes" },
+  { pn: "8225051", desc: "Monopolar probe handles", cat: "Nerve monitoring equipment", sub: "Monopolar probe handles" },
+  { pn: "8225101", desc: "Standard prass flush-tip monopolar stimulator probe (tips and handles)", cat: "Nerve monitoring equipment", sub: "Monopolar stimulator probes" },
+  { pn: "8225110", desc: "Standard prass flush-tip monopolar stimulator probe — tips only", cat: "Nerve monitoring equipment", sub: "Monopolar stimulator probes" },
+  { pn: "8225251", desc: "Yingling flex tip monopolar stimulator probe — tips and handles", cat: "Nerve monitoring equipment", sub: "Monopolar stimulator probes" },
+  { pn: "8225275", desc: "Sterile monopolar probe — tip and handle, 1.0 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225276", desc: "Sterile monopolar probe — tip and handle, 2.3 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225277", desc: "Sterile monopolar probe — tips only, 1.0 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225278", desc: "Sterile monopolar probe — tips only, 2.3 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225351", desc: "Sterile probes (monopolar)", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225401", desc: "Sterile probes (monopolar)", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8225451", desc: "Sterile probes (monopolar)", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8226326", desc: "Paired electrodes, 25 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8226626", desc: "Single electrodes, 25 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8227103", desc: "Subdermal needle electrodes, 2-channel, 12 mm", cat: "Nerve monitoring equipment", sub: "Subdermal needle electrodes" },
+  { pn: "8227131", desc: "Bulk subdermal needle electrodes, yellow", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227133", desc: "Bulk subdermal needle electrodes, violet", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227134", desc: "Bulk subdermal needle electrodes, green", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227135", desc: "Bulk subdermal needle electrodes, black", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227137", desc: "Bulk subdermal needle electrodes, white", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227139", desc: "Bulk subdermal needle electrodes, gray", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227140", desc: "Bulk subdermal needle electrodes, mixture", cat: "Nerve monitoring equipment", sub: "Bulk-packed subdermal electrodes" },
+  { pn: "8227301", desc: "Prass paired electrodes, 2-channel, 25 mm, 1 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8227304", desc: "Prass paired electrodes, 2-channel, 18 mm, 1 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8227307", desc: "Prass paired electrodes, 2-channel, 38 mm, 1 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8227410", desc: "Paired subdermal electrodes, 2-channel, 12 mm", cat: "Nerve monitoring equipment", sub: "Paired subdermal electrodes" },
+  { pn: "8227411", desc: "Paired subdermal electrodes, 4-channel, 12 mm", cat: "Nerve monitoring equipment", sub: "Paired subdermal electrodes" },
+  { pn: "8227412", desc: "Paired subdermal electrodes, 8-channel, 12 mm", cat: "Nerve monitoring equipment", sub: "Paired subdermal electrodes" },
+  { pn: "8227414", desc: "Sterile subdermal electrodes, 2-channel, 12.5 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8227415", desc: "Sterile subdermal electrodes, 4-channel, 12.5 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8227418", desc: "Sterile subdermal electrodes, 2-channel, 18.0 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8227419", desc: "Sterile subdermal electrodes, 4-channel, 18.0 mm", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "8227421", desc: "Subdermal twisted pair electrode set, 4-channel, 22 mm", cat: "Nerve monitoring equipment", sub: "Twisted pair electrode set" },
+  { pn: "8227422", desc: "Subdermal twisted pair electrode set, 8-channel, 22 mm", cat: "Nerve monitoring equipment", sub: "Twisted pair electrode set" },
+  { pn: "8227465", desc: "Paired subdermal electrodes — Mix 1: red, blue, orange, violet, gray", cat: "Nerve monitoring equipment", sub: "Paired subdermal electrodes" },
+  { pn: "8227466", desc: "Paired subdermal electrodes — Mix 2: yellow, green, tan, black, white", cat: "Nerve monitoring equipment", sub: "Paired subdermal electrodes" },
+  { pn: "8227500", desc: "Prass paired electrodes, 4-channel, 18 mm, 2 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8227505", desc: "Prass paired electrodes, 4-channel, 25 mm, 2 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8227510", desc: "Prass paired electrodes, 2-channel, 18 mm, 2 M cable", cat: "Nerve monitoring equipment", sub: "Prass paired electrodes" },
+  { pn: "8228052", desc: "EMG hookwire, 2 mm, size range 2 mm to 3 mm", cat: "Nerve monitoring equipment", sub: "EMG hookwire electrodes" },
+  { pn: "8228053", desc: "EMG hookwire, 3 mm, size range 3 mm to 4 mm", cat: "Nerve monitoring equipment", sub: "EMG hookwire electrodes" },
+  { pn: "3318601", desc: "Sterile single-use suction-irrigation, with irrigation", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "3318602", desc: "Sterile single-use suction-irrigation, without irrigation", cat: "Nerve monitoring equipment", sub: "Sterile, single use" },
+  { pn: "1517000", desc: "MeroGel™ nasal dressing/sinus stent and otologic packing, 4 cm x 4 cm", cat: "Tissue health", sub: "MeroGel™ nasal dressing/sinus stent/otologic dressing" },
+  { pn: "1517002", desc: "MeroGel™ nasal dressing/sinus stent and otologic packing, 4 cm x 4 cm", cat: "Tissue health", sub: "MeroGel™ nasal dressing/sinus stent/otologic dressing" },
+  { pn: "1520000", desc: "MeroPack™ bioresorbable nasal dressing and sinus stent", cat: "Tissue health", sub: "MeroPack™ bioresorbable nasal dressing and sinus stent" },
+  { pn: "1520001", desc: "MeroPack bioresorbable nasal dressing and sinus stent", cat: "Tissue health", sub: "MeroPack™ bioresorbable nasal dressing and sinus stent" },
+  { pn: "1425008", desc: "Merocel™ Pope Oto-Wick™ Fenestrated, 15 mm", cat: "Tissue health", sub: "Merocel™ Pope Oto-Wick™" },
+  { pn: "1514000", desc: "Sinus secretion collector", cat: "Tissue health", sub: "Sinus secretion collector" },
+  { pn: "1524050", desc: "Doyle II intranasal airway splints — 5 pairs", cat: "Tissue health", sub: "Doyle II intranasal airway splints" },
+  { pn: "1524075", desc: "Doyle bi-valve septal splint — 1 pair", cat: "Tissue health", sub: "Doyle bi-valve septal splint" },
+  { pn: "1527000", desc: "Reuter septal splint, thin 0.25 mm", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527005", desc: "Reuter septal splint, thick 0.5 mm", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527010", desc: "Reuter septal splint, thin 0.25 mm", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527015", desc: "Reuter septal splint, thick 0.5 mm", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527020", desc: "Reuter septal splint, thick 0.5 mm, no slit", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527025", desc: "Reuter septal splint, thin 0.25 mm, no slit", cat: "Tissue health", sub: "Reuter septal splint" },
+  { pn: "1527031", desc: "Epistat™ nasal catheter", cat: "Tissue health", sub: "Epistat™ nasal catheter" },
+  { pn: "1528110", desc: "Thermal customizable splint, single, small", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1528111", desc: "Thermal customizable splint, single, small", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1528120", desc: "Thermal customizable splint, single, medium", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1528121", desc: "Thermal customizable splint, single, medium", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1528137", desc: "Thermal customizable splint, single, large", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1528138", desc: "Thermal customizable splint, single, large", cat: "Tissue health", sub: "Thermal customizable splints" },
+  { pn: "1529000", desc: "Thermasplint, small", cat: "Tissue health", sub: "Thermasplints" },
+  { pn: "1529010", desc: "Thermasplint, medium", cat: "Tissue health", sub: "Thermasplints" },
+  { pn: "1529020", desc: "Thermasplint, large", cat: "Tissue health", sub: "Thermasplints" },
+  { pn: "1112070", desc: "Hydroxylapatite incus partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Incus partial prosthesis" },
+  { pn: "1112075", desc: "Hydroxylapatite incus partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Incus partial prosthesis" },
+  { pn: "1112090", desc: "Hydroxylapatite notched offset partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Notched offset partial" },
+  { pn: "1112095", desc: "Hydroxylapatite notched offset partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Notched offset partial" },
+  { pn: "1112120", desc: "Hydroxylapatite prosthesis, Silverstein", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by Herbert Silverstein, M.D." },
+  { pn: "1128190", desc: "Stainless steel and fluoroplastic prosthesis (Schuknecht)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by Harold F. Schuknecht, M.D." },
+  { pn: "1156303", desc: "Polycel™ and stainless steel prosthesis (Brackmann)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by Derald E. Brackmann, M.D." },
+  { pn: "1156305", desc: "Polycel™ and stainless steel prosthesis (Austin)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by David F. Austin, M.D." },
+  { pn: "1156361", desc: "Polycel™ prosthesis (Austin)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by David F. Austin, M.D." },
+  { pn: "1156362", desc: "Polycel™ prosthesis (Sheehy)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by James L. Sheehy, M.D." },
+  { pn: "1156363", desc: "Polycel™ prosthesis (Sheehy)", cat: "Ossicular reconstruction implants and accessories", sub: "Endorsed by James L. Sheehy, M.D." },
+  { pn: "1156376", desc: "Polycel™ and Fluoroplastic Causse partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Causse fluoroplastic partial" },
+  { pn: "1160000", desc: "Titanium partial prosthesis", cat: "Ossicular reconstruction implants and accessories", sub: "Partial titanium prosthesis" },
+  { pn: "1358225", desc: "Standard ear pad, 50.8 mm x 22.9 cm (2” x 9”)", cat: "Ossicular reconstruction implants and accessories", sub: "Offset ear pad (Moretz)" },
+  { pn: "1358227", desc: "Riser ear pad, 25.4 mm x 22.9 cm (1” x 9”)", cat: "Ossicular reconstruction implants and accessories", sub: "Offset ear pad (Moretz)" },
+  { pn: "PT102", desc: "PTeye™ basic bundle", cat: "PTeye parathyroid detection system", sub: "PTeye™" },
+
+  // ── Additional items ─────────────────────────────────────────────
+  { pn: "1830517FRT70", desc: "NuVent™ 70° frontal balloon, 5.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "70° NuVent frontal balloons" },
+  { pn: "1830617FRT70", desc: "NuVent™ 70° frontal balloon, 6.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "70° NuVent frontal balloons" },
+  { pn: "1830717FRT70", desc: "NuVent™ 70° frontal balloon, 7.0 mm x 17.0 mm", cat: "Office-based solutions", sub: "70° NuVent frontal balloons" },
+  { pn: "18INFKIT",     desc: "NuVent™ inflator kit", cat: "Office-based solutions", sub: "NuVent™ inflator" },
+  // ── ApexCut™ blade family ────────────────────────────────────────
+  // Straight
+  { pn: "187BL2900",    desc: "2.9 mm ApexCut™ straight blade, 11 cm",                   cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL3500",    desc: "3.5 mm ApexCut™ straight blade, 11 cm",                   cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL3500PK",  desc: "3.5 mm ApexCut™ straight blade, 11 cm (pack of 5)",       cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL4000",    desc: "4.0 mm ApexCut™ straight blade, 11 cm",                   cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL4000PK",  desc: "4.0 mm ApexCut™ straight blade, 11 cm (pack of 5)",       cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL4000L",   desc: "4.0 mm ApexCut™ straight long blade, 13 cm",              cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  { pn: "187BL4000LPK", desc: "4.0 mm ApexCut™ straight long blade, 13 cm (pack of 5)",  cat: "Powered surgical equipment", sub: "ApexCut™ straight blades" },
+  // 12° curved
+  { pn: "187BL3512",    desc: "3.5 mm ApexCut™ 12° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4012",    desc: "4.0 mm ApexCut™ 12° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4012PK",  desc: "4.0 mm ApexCut™ 12° curved blade, 11 cm (pack of 5)",     cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  // 40° curved
+  { pn: "187BL3540",    desc: "3.5 mm ApexCut™ 40° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4040",    desc: "4.0 mm ApexCut™ 40° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4040PK",  desc: "4.0 mm ApexCut™ 40° curved blade, 11 cm (pack of 5)",     cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  // 60° curved
+  { pn: "187BL2960",    desc: "2.9 mm ApexCut™ 60° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL3560",    desc: "3.5 mm ApexCut™ 60° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4060",    desc: "4.0 mm ApexCut™ 60° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL4060PK",  desc: "4.0 mm ApexCut™ 60° curved blade, 11 cm (pack of 5)",     cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  // 75° curved
+  { pn: "187BL2975",    desc: "2.9 mm ApexCut™ 75° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  // 90° / 120° curved
+  { pn: "187BL3590",    desc: "3.5 mm ApexCut™ 90° curved blade, 11 cm",                 cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "187BL35120",   desc: "3.5 mm ApexCut™ 120° curved blade, 11 cm",                cat: "Powered surgical equipment", sub: "ApexCut™ curved blades" },
+  { pn: "50011",        desc: "Propel® Contour — one implant for frontal/maxillary ostia (Box of 1)", cat: "Tissue health", sub: "Propel® sinus implants" },
+  { pn: "60011",        desc: "Propel® Mini Curved — one 16 mm implant + curved/malleable delivery system (Box of 1)", cat: "Tissue health", sub: "Propel® sinus implants" },
+  { pn: "60044",        desc: "Propel® Mini Straight — one 16 mm implant + straight delivery system (Box of 1)", cat: "Tissue health", sub: "Propel® sinus implants" },
+  { pn: "70011",        desc: "Propel® Original — one 23 mm ethmoid sinus implant (Box of 1)", cat: "Tissue health", sub: "Propel® sinus implants" },
+];
+
+// Build a quick lookup so per-event-type defaults can reference parts by PN.
+const CATALOG_BY_PN = Object.fromEntries(MEDTRONIC_CATALOG.map(p => [p.pn, p]));
+
+// ═══════════════════════════════════════════════════════════════════
+// PER-EVENT-TYPE DEFAULT RESTOCK LIST
+// Each event category gets a default list of parts to reorder. Items
+// are pulled by PN from MEDTRONIC_CATALOG. The lab manager can edit
+// the list in the modal before sending — they can also add any other
+// catalog item via the search picker.
+// ═══════════════════════════════════════════════════════════════════
+function pickFromCatalog(pn, qty) {
+  const p = CATALOG_BY_PN[pn];
+  if (!p) return null;
+  return { partNumber: p.pn, description: p.desc, qty: qty || 1, unit: 'ea' };
+}
+function buildDefaultList(pnQtyPairs) {
+  return pnQtyPairs.map(([pn, qty]) => pickFromCatalog(pn, qty)).filter(Boolean);
+}
+
+const RESTOCK_CATALOG = {
+  // Full lab session — typical consumables for a cadaver lab
+  lab: buildDefaultList([
+    ["1895522T", 2],   // M4/M5 irrigation tubing for blades and burs
+    ["1884380EM", 2],  // 4.3 mm Quadcut EM blade
+    ["1883480EM", 2],  // 3.4 mm Quadcut EM blade
+    ["1884006EM", 1],  // RAD 40 curved EM
+    ["1884012EM", 1],  // RAD 12 curved EM
+    ["1883040BLD", 2], // 30K bullet diamond bur 3.0 mm 40°
+    ["1883070BLC", 2], // 30K bullet cutting bur 3.0 mm 70°
+    ["1884070RTC", 1], // 30K reverse tapered cutting bur 4.0 mm 70°
+    ["8227418", 5],    // Sterile subdermal electrodes 2-ch 18 mm
+    ["8227419", 3],    // Sterile subdermal electrodes 4-ch 18 mm
+    ["1517000", 4],    // MeroGel nasal dressing
+    ["1520001", 4],    // MeroPack bioresorbable
+    ["3318601", 2],    // Sterile suction-irrigation, with irrigation
+  ]),
+
+  // Training / Hold (no cadaver) — minimal restock
+  training: buildDefaultList([
+    ["1895522T", 1],
+    ["1883480EM", 1],
+    ["1884380EM", 1],
+  ]),
+
+  // R&D / video recording / scans / demos
+  rd: buildDefaultList([
+    ["1895522T", 1],
+    ["1884380EM", 1],
+    ["1883080EM", 1],
+    ["1884070RTD", 1],
+  ]),
+
+  // Specimen delivery / pickup — no Medtronic parts typically; keep empty.
+  specimenDelivery: [],
+  specimenPickup:   [],
+
+  // Cleanup — no Medtronic parts typically
+  cleanup: [],
+
+  // Install / Setup
+  install: [],
+
+  // Meeting / Other
+  meeting:   [],
+  other:     [],
+  inventory: [],   // par-check flow always populates this dynamically
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LAB VARIANTS — sub-types of "Lab Session" with their own kits.
+// When the restock modal opens for a Lab event, a variant selector
+// lets the lab manager pick the lab type and the items list auto-
+// populates. Add new variants here over time (otology, multi-station
+// sinus, FESS, septoplasty, etc.).
+// ═══════════════════════════════════════════════════════════════════
+const LAB_VARIANTS = {
+  default: {
+    label: "General lab (default)",
+    items: RESTOCK_CATALOG.lab,
+  },
+  sinusLab1Station: {
+    label: "1-Station Sinus Lab",
+    items: buildDefaultList([
+      ["1884380EM", 1],   // 1 navigated Quadcut (4.3 mm) — adjust size if needed
+      ["187BL4000L", 1],  // 1 Apex straight blade, 13 cm
+      ["1884006EM", 1],   // 1 navigated RAD 40 curved
+      ["50011", 1],       // Propel Contour (Box of 1)
+      ["60011", 1],       // Propel Mini Curved (Box of 1)
+      ["60044", 1],       // Propel Mini Straight (Box of 1)
+      ["18INFKIT", 1],    // NuVent inflator
+      ["1830717FRT70", 1],// 70° NuVent frontal balloon, 7 mm
+      ["1830707MAX", 1],  // Maxillary balloon, 7 mm
+      ["1830717SPH", 1],  // Sphenoid balloon, 7 mm
+      ["9733534XOM", 1],  // Patient tracker
+      ["9733533XOM", 1],  // Instrument tracker
+    ]),
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// EMAIL TEMPLATES — per event category, with Pre-event and Post-event
+// variants. Body uses Josh's natural voice. Available placeholders:
+//   {address}      → lab shipping address
+//   {dsmCC}        → cost center number
+//   {dsmName}      → DSM name
+//   {eventDate}    → "May 13, 2026"
+//   {eventTitle}   → raw event title
+//   {surgeon}      → "Dr. Loren Jones" if detected, else "" (template
+//                     should handle empty case via {?surgeon ...})
+//   {tmplLabel}    → friendly category label ("ENT Immersion Lab")
+//
+// Special syntax: {?varName text using {varName}} renders the inner
+// text only if varName is non-empty.
+// ═══════════════════════════════════════════════════════════════════
+const EMAIL_TEMPLATES = {
+  lab: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for the upcoming ENT Immersion Lab on {eventDate}{?surgeon  with {surgeon}}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to replenish after the ENT Immersion Lab on {eventDate}{?surgeon  with {surgeon}}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  training: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for the upcoming training session on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to replenish after the training session on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  rd: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for an upcoming R&D session on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to replenish after the R&D session on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  cleanup: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for cleanup / restocking on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to restock after cleanup on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  specimenDelivery: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for an upcoming specimen delivery on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} following the specimen delivery on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  specimenPickup: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for an upcoming specimen pickup on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} following the specimen pickup on {eventDate}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  install: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for the upcoming install on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} after the install on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  meeting: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for an upcoming meeting on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} following the meeting on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  other: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} for the upcoming event on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to replenish after the event on {eventDate} ({eventTitle}).\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+  inventory: {
+    pre:  "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to bring our inventory back up to par at the {fromLab}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+    post: "Hi customer service team,\n\nCan you please order the following delivered to my attention at {address} to bring our inventory back up to par at the {fromLab}.\n\nCost Center is {dsmCC} ({dsmName}).\n\nPlease order the following:",
+  },
+};
+
+// Closing block (appended after items table + optional notes)
+const EMAIL_CLOSING_TEMPLATE = "Thanks,\n{contactName}\n{contactEmail}{?contactPhone  ·  {contactPhone}}\n{fromLab}";
+
+// Render a template with placeholders. Supports {var} and {?var text}.
+// Conditional separator is exactly ONE whitespace, so a leading space inside
+// the conditional body is preserved (e.g. "{?surgeon  with {surgeon}}" emits
+// " with Dr. X" only when surgeon is set; eats the whole construct otherwise).
+function renderTemplate(tpl, vars) {
+  let out = tpl.replace(/\{\?(\w+)\s([^{}]*(?:\{[^}]+\}[^{}]*)*)\}/g, (_, name, inner) => {
+    return vars[name] ? renderTemplate(inner, vars) : '';
+  });
+  out = out.replace(/\{(\w+)\}/g, (m, name) => (vars[name] != null ? vars[name] : ''));
+  return out;
+}
+
+// Try to extract a surgeon name from an event title. Looks for "Dr. X" / "Dr X"
+// followed by 1–4 capitalized name parts. Returns "Dr. Last" or "Dr. First Last".
+function detectSurgeonFromTitle(title) {
+  if (!title) return '';
+  // match "Dr." or "Dr " optionally then one to four Capitalized words
+  const m = title.match(/\bDr\.?\s+([A-Z][a-zA-Z'’]+(?:\s+[A-Z][a-zA-Z'’]+){0,3})/);
+  if (!m) return '';
+  // trim trailing words that look like rep/lab keywords
+  let name = m[1].replace(/\s+(Rep|Lab|Immersion|ENT|and|with|&|PA|PAs).*$/i, '').trim();
+  return 'Dr. ' + name;
+}
+
+// Daily recurring operations (every weekday).
+// Items can have:
+//   subTasks: [{ id, text }]  → indented sub-checkboxes; parent auto-checks when all subs done
+//   action:   string          → renders an inline button that triggers a modal
+//                               'labSupplyPar'  → Lab supply par-check (non-Medtronic, emails Ana Maria)
+//                               'medtronicPar'  → Medtronic product par-check (opens restock email)
+const DAILY_OPS = [
+  { id: "biohazard", text: "Biohazard area organized", subTasks: [
+    { id: "biohazard-trash-lid",     text: "Trash lid on every box" },
+    { id: "biohazard-sharps",        text: "Sharps containers — fill level checked" },
+    { id: "biohazard-fill-line",     text: "Nothing above the fill line" },
+    { id: "biohazard-suction",       text: "Suction canisters discarded" },
+    { id: "biohazard-used-product",  text: "All used product discarded" },
+  ]},
+  { id: "scrubs", text: "Scrubs organized & restocked" },
+  { id: "ppe",    text: "PPE organized & restocked" },
+  { id: "lab-supply-check", text: "Lab supply par check (non-Medtronic)", action: "labSupplyPar" },
+  { id: "medtronic-check",  text: "Medtronic product par check & inventory",  action: "medtronicPar" },
+  { id: "review-tomorrow",  text: "Review tomorrow's schedule & confirm specimens / setup" },
+  { id: "lab-walkthrough",  text: "Walk-through lab safety & cleanliness check" },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// PAR LEVELS — Lab Supplies (non-Medtronic) and Medtronic Products
+// Used by the daily Par Check modals. The lab manager records current
+// counts per item; anything below par flips red and gets included in
+// the auto-generated reorder email.
+//
+// LAB_SUPPLY_PAR items get emailed to Ana Maria.
+// MEDTRONIC_PAR items go through the customer service restock email.
+//
+// Edit these freely — par counts persist in localStorage and update
+// dynamically. The contact email for lab supplies is set below.
+// ═══════════════════════════════════════════════════════════════════
+const LAB_SUPPLY_CONTACT = {
+  name:  "Ana Maria Rojas",
+  email: "ana.maria.rojas@medtronic.com",
+};
+
+const LAB_SUPPLY_PAR = [
+  // PPE & scrubs
+  { id: "scrubs-s",         name: "Scrubs — size S",                par: 5,   unit: "set" },
+  { id: "scrubs-m",         name: "Scrubs — size M",                par: 8,   unit: "set" },
+  { id: "scrubs-l",         name: "Scrubs — size L",                par: 8,   unit: "set" },
+  { id: "scrubs-xl",        name: "Scrubs — size XL",               par: 5,   unit: "set" },
+  { id: "lab-coats",        name: "Lab coats",                       par: 5,   unit: "ea" },
+  { id: "bouffant-caps",    name: "Bouffant caps",                   par: 100, unit: "ea" },
+  { id: "shoe-covers",      name: "Shoe covers",                     par: 50,  unit: "pair" },
+  { id: "face-masks",       name: "Face masks",                      par: 3,   unit: "box" },
+  { id: "face-shields",     name: "Face shields",                    par: 10,  unit: "ea" },
+  { id: "gloves-s",         name: "Sterile gloves — size S",         par: 3,   unit: "box" },
+  { id: "gloves-m",         name: "Sterile gloves — size M",         par: 5,   unit: "box" },
+  { id: "gloves-l",         name: "Sterile gloves — size L",         par: 5,   unit: "box" },
+  // Drapes & textiles
+  { id: "drapes-large",     name: "Surgical drapes — large",         par: 25,  unit: "ea" },
+  { id: "drapes-small",     name: "Surgical drapes — small",         par: 25,  unit: "ea" },
+  { id: "huck-towels",      name: "Huck towels",                     par: 50,  unit: "ea" },
+  // Consumables
+  { id: "gauze-4x4",        name: "4x4 sterile gauze sponges",       par: 10,  unit: "pack" },
+  { id: "alcohol-pads",     name: "Alcohol prep pads",               par: 5,   unit: "box" },
+  { id: "scalpel-10",       name: "#10 scalpel blades",              par: 2,   unit: "box" },
+  { id: "scalpel-15",       name: "#15 scalpel blades",              par: 2,   unit: "box" },
+  { id: "lab-markers",      name: "Lab markers / sterile pens",      par: 2,   unit: "pack" },
+  { id: "specimen-tags",    name: "Specimen ID tags",                par: 50,  unit: "ea" },
+  // Cleaning & biohazard
+  { id: "sani-cloth",       name: "Sani-Cloth disinfectant wipes",   par: 6,   unit: "tub" },
+  { id: "disinfectant",     name: "Disinfectant cleaner (gallon)",   par: 3,   unit: "ea" },
+  { id: "paper-towels",     name: "Paper towels",                    par: 12,  unit: "roll" },
+  { id: "trash-bags",       name: "Heavy duty trash liners",         par: 2,   unit: "box" },
+  { id: "biohazard-bags",   name: "Biohazard bags (red)",            par: 3,   unit: "box" },
+  { id: "sharps-small",     name: "Sharps containers — small",       par: 6,   unit: "ea" },
+  { id: "sharps-large",     name: "Sharps containers — large",       par: 3,   unit: "ea" },
+  { id: "suction-canisters",name: "Suction canisters",               par: 10,  unit: "ea" },
+  { id: "autoclave-tape",   name: "Autoclave indicator tape",        par: 2,   unit: "roll" },
+];
+
+// Medtronic par levels — catalog PNs and target counts. Description
+// and category are pulled from MEDTRONIC_CATALOG via CATALOG_BY_PN.
+const MEDTRONIC_PAR = [
+  // Blades — EM tracked
+  { pn: "1884380EM",             par: 5 },   // 4.3 mm Quadcut EM
+  { pn: "1883480EM",             par: 5 },   // 3.4 mm Quadcut EM
+  { pn: "1883080EM",             par: 3 },   // 3.0 mm Quadcut EM
+  { pn: "1884080EM",             par: 3 },   // 4.0 mm Tricut EM
+  { pn: "1884006EM",             par: 4 },   // RAD 40 curved EM
+  { pn: "1884012EM",             par: 3 },   // RAD 12 curved EM
+  // Blades — non-EM
+  { pn: "1884380HR",             par: 3 },
+  { pn: "1883480HRE",            par: 3 },
+  { pn: "1883080HRE",            par: 2 },
+  // Burs
+  { pn: "1883040BLD",            par: 3 },
+  { pn: "1883070BLD",            par: 3 },
+  { pn: "1883040BLC",            par: 3 },
+  { pn: "1883070BLC",            par: 3 },
+  { pn: "1884070RTC",            par: 2 },
+  { pn: "1884070RTD",            par: 2 },
+  // Tubing & accessories
+  { pn: "1895522T",              par: 5 },   // M4/M5 irrigation tubing
+  { pn: "3318604E",              par: 3 },   // IPC suction-irrigation
+  // Tissue health
+  { pn: "1517000",               par: 8 },   // MeroGel 4x4
+  { pn: "1520001",               par: 8 },   // MeroPack
+  { pn: "50011",                 par: 3 },   // Propel Contour (Box of 1)
+  { pn: "60011",                 par: 3 },   // Propel Mini Curved (Box of 1)
+  { pn: "60044",                 par: 3 },   // Propel Mini Straight (Box of 1)
+  { pn: "70011",                 par: 2 },   // Propel Original 23mm (Box of 1)
+  // NIM / electrodes
+  { pn: "8227418",               par: 10 },  // Sterile subdermal 2-ch 18 mm
+  { pn: "8227419",               par: 5 },   // Sterile subdermal 4-ch 18 mm
+  { pn: "8225825X",              par: 2 },   // NIM surgeon control probe prass
+  { pn: "8225490X",              par: 2 },   // NIM surgeon control probe ball
+  // Balloons
+  { pn: "1830707MAX",            par: 4 },
+  { pn: "1830717SPH",            par: 4 },
+  { pn: "1830717FRT70",          par: 4 },
+  { pn: "18INFKIT",              par: 2 },
+  // Navigation trackers
+  { pn: "9733534XOM",            par: 3 },   // Patient tracker
+  { pn: "9733533XOM",            par: 3 },   // Instrument tracker
+  // Apex
+  { pn: "187BL4000L",            par: 3 },   // Apex straight blade, 13 cm
+];
+</script>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<header>
+  <div class="logo-row">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.553085 5.7294618" width="160" height="28" aria-label="Medtronic" style="opacity:0.95;">
+      <g transform="translate(-123.20727,-277.37219)">
+        <path fill="#ffffff" d="m 132.09096,280.66695 c -0.0466,-0.58138 -0.3489,-0.92251 -0.96132,-0.92251 -0.56585,0 -0.9144,0.35665 -0.97649,0.92251 z m 0.91475,0.21696 c 0,0.18626 -0.0155,0.37994 -0.0466,0.53481 h -2.79048 c 0.10055,0.46531 0.49601,0.75212 1.24002,0.75212 0.004,0 0.007,-3.5e-4 0.01,-3.5e-4 0.003,0 0.005,-3.5e-4 0.008,-3.5e-4 0.0469,0 0.0928,-0.002 0.13829,-0.004 0.0243,-10e-4 0.049,-0.003 0.0734,-0.005 0.0194,-0.002 0.0385,-0.004 0.0575,-0.005 0.30974,-0.0314 0.6043,-0.11465 0.87453,-0.2413 0.0212,-0.0102 0.043,-0.0201 0.0635,-0.0307 h 3.5e-4 c 0.0547,-0.0275 0.10795,-0.0579 0.16052,-0.0889 h 0.0236 v 0.78458 c -0.40851,0.2473 -0.88723,0.38947 -1.39946,0.38947 v -0.002 c -0.0187,3.6e-4 -0.037,0.002 -0.0561,0.002 -1.40335,0 -2.17064,-0.79834 -2.17064,-1.96109 0,-1.24813 0.79058,-2.06975 1.93781,-2.06975 1.14723,0 1.87607,0.81386 1.87607,1.94557 m -9.66646,2.00766 h 0.95356 l 0.17815,-3.34081 0.0388,-0.90699 h 0.0155 l 0.20179,0.90699 0.77505,3.34081 h 1.1938 l 0.78281,-3.34081 0.19368,-0.90699 h 0.0155 l 0.0388,0.90699 0.18626,3.34081 h 0.99201 l -0.32561,-5.34847 h -1.58115 l -0.71332,3.20922 -0.15487,0.81386 h -0.0155 l -0.16298,-0.81386 -0.71297,-3.20922 h -1.5815 z m 16.41052,0.0776 c -0.89147,0 -1.39559,-0.41099 -1.39559,-1.34091 v -1.82951 h -1.06963 v 1.94557 c 0,0.28681 0.10866,0.40323 0.34114,0.40323 0.0543,0 0.11606,0 0.18591,-0.0155 h 0.0233 v 0.75953 c -0.0931,0.0233 -0.27905,0.0466 -0.4184,0.0466 -0.52705,0 -0.85301,-0.20143 -0.99236,-0.64346 -0.27905,0.43427 -0.72073,0.67451 -1.27106,0.67451 -0.9846,0 -1.78294,-0.76729 -1.78294,-2.02318 0,-1.24037 0.79834,-2.00766 1.78294,-2.00766 0.48789,0 0.89147,0.18591 1.17016,0.52705 v -1.92229 h 0.96132 v 1.47285 h 1.06963 v -0.92251 h 0.96132 v 0.92251 h 1.03117 v 0.78281 h -1.03117 v 1.78294 c 0,0.38735 0.19367,0.57362 0.5662,0.57362 0.1704,0 0.28646,-0.0155 0.44168,-0.0543 h 0.0233 v 0.79058 c -0.18627,0.0466 -0.41099,0.0776 -0.5969,0.0776 m -4.39526,-0.81386 c 0.65122,0 1.01529,-0.50377 1.01529,-1.20932 0,-0.6978 -0.36407,-1.20156 -1.01529,-1.20156 -0.65899,0 -1.00013,0.50376 -1.00013,1.20156 0,0.70555 0.34114,1.20932 1.00013,1.20932 m 6.37963,-1.2947 c 0,-0.62794 0.32561,-0.97684 0.9458,-0.97684 0.1083,0 0.22472,0.0155 0.33302,0.0469 h 0.0155 v -0.89958 c -0.10054,-0.0385 -0.23248,-0.0617 -0.37994,-0.0617 -0.46496,0 -0.77505,0.28681 -0.95321,0.75177 v -0.7052 h -0.92251 v 3.87562 h 0.96132 z m 3.34892,2.10856 c -1.21708,0 -2.03906,-0.88371 -2.03906,-2.01542 0,-1.13171 0.82198,-2.01542 2.03906,-2.01542 1.20897,0 2.03094,0.88371 2.03094,2.01542 0,1.13171 -0.82197,2.01542 -2.03094,2.01542 m 0,-0.82938 c 0.68968,0 1.04634,-0.50377 1.04634,-1.18604 0,-0.68227 -0.35666,-1.18604 -1.04634,-1.18604 -0.67451,0 -1.05445,0.50377 -1.05445,1.18604 0,0.68227 0.37994,1.18604 1.05445,1.18604 m 3.50591,-1.41076 c 0,-0.5969 0.30233,-0.9846 0.86042,-0.9846 0.55033,0 0.80645,0.36442 0.80645,0.9846 v 2.16253 h 0.96097 v -2.20134 c 0,-0.93027 -0.48049,-1.75189 -1.52683,-1.75189 -0.55809,0 -0.93027,0.27905 -1.13982,0.69779 v -0.62018 h -0.92251 v 3.87562 h 0.96132 z m 4.3254,-2.65889 c 0,0.31009 -0.248,0.57362 -0.57326,0.57362 -0.31009,0 -0.56621,-0.26353 -0.56621,-0.57362 0,-0.31009 0.25612,-0.56585 0.56621,-0.56585 0.32526,0 0.57326,0.25576 0.57326,0.56585 m 0.53517,4.82142 c -0.14746,0.031 -0.31786,0.0543 -0.47308,0.0543 -0.73624,0 -1.13171,-0.3877 -1.13171,-1.10066 v -2.82928 h 0.96908 v 2.75943 c 0,0.25576 0.12383,0.37994 0.3877,0.37994 0.0617,0 0.13935,-0.008 0.22472,-0.0233 h 0.0233 z m 0.0928,-1.93781 c 0,-1.13171 0.82162,-2.01542 2.04646,-2.01542 0.3489,0 0.74436,0.0854 1.03893,0.248 v 0.85267 h -0.0233 c -0.30233,-0.17816 -0.60466,-0.26353 -0.9458,-0.26353 -0.7366,0 -1.13171,0.50377 -1.13171,1.17828 0,0.67451 0.39511,1.17828 1.13171,1.17828 0.34114,0 0.64347,-0.0854 0.9458,-0.26353 h 0.0233 v 0.85266 c -0.29457,0.16299 -0.69003,0.24801 -1.03893,0.24801 -1.22484,0 -2.04646,-0.88371 -2.04646,-2.01542"/>
+      </g>
+    </svg>
+  </div>
+  <div class="title-block">
+    <h1>Jacksonville Bioskills Lab — Manager Dashboard</h1>
+    <p class="location">Jacksonville, Florida · Today + 30 days</p>
+    <p class="contacts">
+      Lab Manager:
+      <a href="mailto:josh.a.register@medtronic.com">Josh Register</a>
+      &nbsp;·&nbsp;
+      <a href="https://teamup.com/c/mwb2ov/medtronic-ent-education" target="_blank" rel="noopener">Open Teamup Calendar →</a>
+    </p>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="progress-pill" id="progress-pill" title="Tasks completed across the visible window">
+    <span id="role-badge" style="display:none;font-size:0.78rem;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:3px 8px;border-radius:4px;color:#fff;margin-right:6px;"></span>
+    <span id="progress-text">Loading…</span>
+    <div class="bar-track"><div class="bar-fill" id="progress-bar"></div></div>
+  </div>
+  <div class="actions">
+    <!-- View switcher (master only) -->
+    <div class="view-switcher" id="view-switcher" style="display:none;background:#fff;border:1.5px solid #d0d8e8;border-radius:8px;padding:3px;display:none;gap:0;">
+      <a class="view-tab" id="view-tab-day"  href="#" data-view="day"  style="padding:5px 12px;border-radius:6px;font-size:0.83rem;font-weight:600;text-decoration:none;color:#555;">📅 Day-by-day</a>
+      <a class="view-tab" id="view-tab-team" href="#" data-view="team" style="padding:5px 12px;border-radius:6px;font-size:0.83rem;font-weight:600;text-decoration:none;color:#555;">👥 Team Status</a>
+    </div>
+    <div class="filter-chips" id="filter-chips">
+      <div class="chip active" data-filter="all">All days</div>
+      <div class="chip" data-filter="active">Days with tasks</div>
+      <div class="chip" data-filter="incomplete">Incomplete only</div>
+    </div>
+    <button class="btn" id="btn-share-links" type="button" title="Get role-specific share links">🔗 Share links</button>
+    <button class="btn" id="btn-cadaver-log" type="button" title="View full cadaver log">📋 Cadaver Log</button>
+    <button class="btn" id="btn-collapse" type="button" title="Collapse all days">⌄ Collapse all</button>
+    <button class="btn primary" id="btn-refresh" type="button">↻ Refresh</button>
+  </div>
+</div>
+
+<main>
+  <div id="today-banner-wrap"></div>
+  <div id="dashboard">
+    <div class="skeleton-day"></div>
+    <div class="skeleton-day"></div>
+    <div class="skeleton-day"></div>
+    <div class="skeleton-day"></div>
+  </div>
+</main>
+
+<!-- ─── Restock Email Modal ─────────────────────────────────────────── -->
+<div class="modal-backdrop" id="restock-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Post-Event Restocking Email</h3>
+      <button class="modal-close" id="restock-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <label for="restock-to">To</label>
+      <input type="text" id="restock-to" />
+      <label for="restock-cc">Cc</label>
+      <input type="text" id="restock-cc" />
+      <label for="restock-dsm">Charge to (District Sales Manager)</label>
+      <select id="restock-dsm" style="width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px 12px;font-size:0.92rem;background:#fff;font-family:inherit;color:#1a1a2e;outline:none;"></select>
+      <div style="margin-top:6px;font-size:0.8rem;color:#666;">Cost center: <strong id="restock-cc-display" style="font-family:ui-monospace,Menlo,monospace;color:#003da5;">—</strong></div>
+      <label for="restock-subject">Subject</label>
+      <input type="text" id="restock-subject" />
+
+      <label>Order Timing</label>
+      <div id="restock-timing" style="display:flex;gap:8px;margin-top:2px;">
+        <label class="timing-chip" data-timing="pre"  style="cursor:pointer;flex:1;text-align:center;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:0.85rem;font-weight:600;background:#fff;color:#555;">Pre-event (prep / upcoming)</label>
+        <label class="timing-chip" data-timing="post" style="cursor:pointer;flex:1;text-align:center;padding:9px 12px;border:1.5px solid #d0d8e8;border-radius:8px;font-size:0.85rem;font-weight:600;background:#fff;color:#555;">Post-event (replenish)</label>
+      </div>
+
+      <div id="variant-row" style="display:none;margin-top:14px;">
+        <label for="restock-variant">Lab Variant</label>
+        <select id="restock-variant" style="width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px 12px;font-size:0.92rem;background:#fff;font-family:inherit;outline:none;color:#1a1a2e;"></select>
+        <div style="margin-top:5px;font-size:0.78rem;color:#888;">Switching variants replaces the items list below with that variant's standard kit.</div>
+      </div>
+
+      <label>Items to Reorder</label>
+      <table class="items-table" id="items-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Part #</th>
+            <th>Description</th>
+            <th style="width: 80px;">Qty</th>
+            <th style="width: 80px;">Unit</th>
+            <th style="width: 28px;"></th>
+          </tr>
+        </thead>
+        <tbody id="items-tbody"></tbody>
+      </table>
+      <div class="items-empty" id="items-empty" style="display:none;">No items added yet — search the Medtronic catalog below to add parts.</div>
+
+      <div class="picker-wrap">
+        <div class="picker-label">Search Medtronic catalog (189 parts) — by part # or description</div>
+        <input type="text" class="picker-input" id="picker-input" placeholder="e.g. Quadcut, 1884380EM, MeroGel, electrode…" />
+        <div class="picker-results" id="picker-results"></div>
+      </div>
+
+      <label for="restock-notes" style="margin-top:18px;">Additional Notes (optional — appended to email body)</label>
+      <textarea id="restock-notes" style="min-height:60px;" placeholder="e.g. ship to Jacksonville Lab attn. Josh Register, please rush"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="restock-preview" type="button">Preview email body</button>
+      <button class="btn" id="restock-copy" type="button">Copy to clipboard</button>
+      <button class="btn primary" id="restock-send" type="button">Open in mail app →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Cadaver Log Entry Modal ─────────────────────────────────────── -->
+<div class="modal-backdrop" id="cadaver-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="cadaver-modal-title">Cadaver Log Entry</h3>
+      <button class="modal-close" id="cadaver-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cadaver-event-context" style="background:#f4f6f9;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#555;margin-bottom:14px;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label for="cad-date">Date</label>
+          <input type="date" id="cad-date" />
+        </div>
+        <div>
+          <label for="cad-direction">Direction</label>
+          <select id="cad-direction" style="width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px 12px;font-size:0.92rem;background:#fff;font-family:inherit;outline:none;">
+            <option value="intake">Intake (delivery)</option>
+            <option value="disposal">Disposal / pickup</option>
+            <option value="transfer">Transfer (in-lab move)</option>
+          </select>
+        </div>
+        <div>
+          <label for="cad-source">Source / Destination</label>
+          <input type="text" id="cad-source" placeholder="e.g. Science Care, Meri, UF/Duke" />
+        </div>
+        <div>
+          <label for="cad-courier">Courier / Vendor</label>
+          <input type="text" id="cad-courier" placeholder="e.g. Science Care, Meri Pharma" />
+        </div>
+        <div>
+          <label for="cad-count">Count</label>
+          <input type="number" id="cad-count" min="0" />
+        </div>
+        <div>
+          <label for="cad-type">Specimen Type</label>
+          <select id="cad-type" style="width:100%;border:1.5px solid #d0d8e8;border-radius:8px;padding:10px 12px;font-size:0.92rem;background:#fff;font-family:inherit;outline:none;">
+            <option value="head">Head</option>
+            <option value="head-neck">Head + Neck</option>
+            <option value="full-body">Full body</option>
+            <option value="larynx">Larynx</option>
+            <option value="other">Other (note below)</option>
+          </select>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label for="cad-donor-ids">Donor / Specimen IDs</label>
+          <input type="text" id="cad-donor-ids" placeholder="Comma-separated, e.g. SC-2456, SC-2457, SC-2458" />
+        </div>
+        <div>
+          <label for="cad-storage">Storage Location</label>
+          <input type="text" id="cad-storage" placeholder="e.g. Freezer 2, shelf 3" />
+        </div>
+        <div>
+          <label for="cad-signed-by">Signed / Logged by</label>
+          <input type="text" id="cad-signed-by" placeholder="e.g. Josh Register" />
+        </div>
+      </div>
+
+      <label for="cad-notes" style="margin-top:14px;">Notes</label>
+      <textarea id="cad-notes" style="min-height:60px;" placeholder="Anything else worth recording — condition on arrival, paperwork received, exceptions, etc."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="cadaver-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="cadaver-save" type="button">Save log entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Cadaver Log Viewer Modal (full history) ─────────────────────── -->
+<div class="modal-backdrop" id="cadaver-list-modal">
+  <div class="modal" style="max-width: 1000px;">
+    <div class="modal-header">
+      <h3>Cadaver Log — All Entries</h3>
+      <button class="modal-close" id="cadaver-list-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cadaver-list-summary" style="font-size:0.85rem;color:#666;margin-bottom:10px;"></div>
+      <input type="text" id="cadaver-list-filter" class="picker-input" placeholder="Filter by date, source, donor ID, signer…" />
+      <div id="cadaver-list-table-wrap" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="cadaver-list-export" type="button">Export CSV</button>
+      <button class="btn primary" id="cadaver-list-close-btn" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Par-Level Check Modal (Lab Supply or Medtronic) ─────────────── -->
+<div class="modal-backdrop" id="par-modal">
+  <div class="modal" style="max-width:980px;">
+    <div class="modal-header">
+      <h3 id="par-modal-title">Par Check</h3>
+      <button class="modal-close" id="par-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="par-modal-summary" style="font-size:0.88rem;color:#555;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <input type="text" id="par-filter" class="picker-input" style="flex:1;min-width:200px;" placeholder="Filter by name or part number…" />
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;font-weight:600;color:#555;cursor:pointer;">
+          <input type="checkbox" id="par-show-below-only" />
+          Show below par only
+        </label>
+      </div>
+      <div id="par-table-wrap" style="overflow-x:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="par-reset" type="button" title="Clear today's counts">Reset counts</button>
+      <button class="btn primary" id="par-action" type="button">Generate email →</button>
+    </div>
+  </div>
+</div>
+
+<footer>Medtronic ENT Education · Jacksonville Bioskills Lab · Internal Use Only</footer>
+
+<script>
+(function () {
+  const cfg = ADMIN_CONFIG;
+  const dashEl = document.getElementById('dashboard');
+  const bannerWrap = document.getElementById('today-banner-wrap');
+  const progressTextEl = document.getElementById('progress-text');
+  const progressBarEl = document.getElementById('progress-bar');
+  const refreshBtn = document.getElementById('btn-refresh');
+  const collapseBtn = document.getElementById('btn-collapse');
+  const filterChips = document.getElementById('filter-chips');
+
+  const DOW   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DOW_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  let state = {
+    events: [],          // raw teamup events (jacksonville sub-cal only)
+    days: [],            // [{ dateKey, dateObj, isToday, isPast, events:[], tasks:[] }]
+    filter: 'all',
+    allCollapsed: false,
+  };
+
+  // ── Date helpers ───────────────────────────────────────────────────
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  function parseYMD(s) {
+    const [y,m,d] = s.slice(0,10).split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+  function addDays(d, n) {
+    const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    nd.setDate(nd.getDate() + n);
+    return nd;
+  }
+  function isWeekend(d) { return d.getDay() === 0 || d.getDay() === 6; }
+  function isToday(d) {
+    const t = new Date();
+    return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+  }
+  function fmtDate(d) {
+    return DOW_FULL[d.getDay()] + ', ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
+  }
+
+  // ── Storage ───────────────────────────────────────────────────────
+  function storageKey() { return cfg.storageNamespace + '.checks'; }
+  function loadChecks() {
+    try {
+      const raw = localStorage.getItem(storageKey());
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveChecks(checks) {
+    try { localStorage.setItem(storageKey(), JSON.stringify(checks)); } catch (e) {}
+  }
+  let CHECKS = loadChecks();
+
+  // ── Event classification ──────────────────────────────────────────
+  function classifyEvent(evt) {
+    const t = (evt.title || '').toLowerCase().trim();
+    if (!t) return 'other';
+
+    // Closed / blocked
+    if (/\b(closed|jax\s*lab\s*closed|lab\s*closed)\b/.test(t)) return 'closed';
+    if (/\bhold\b/.test(t)) return 'hold';
+    if (/\b(cleanup|clean\s*up)\b/.test(t)) return 'cleanup';
+
+    // Specimen logistics
+    if (/(pick\s*up|pickup)/.test(t) && /(tissue|specimen|head|cadaver)/.test(t)) return 'specimenPickup';
+    if (/(deliver|delivery|drop\s*off)/.test(t) && /(tissue|specimen|head|cadaver)/.test(t)) return 'specimenDelivery';
+    if (/\b(science\s*care|meri)\b/.test(t)) {
+      if (/pick/.test(t)) return 'specimenPickup';
+      return 'specimenDelivery';
+    }
+
+    // Remote / off-site (RAF HOW = remote events)
+    if (/\braf\s*how\b/.test(t)) return 'remote';
+    if (/(off-?site|off\s*site|virtual)/.test(t)) return 'remote';
+
+    // Install / setup
+    if (/\b(install|installation)\b/.test(t)) return 'install';
+    if (/\b(scans?\/setup|scans\s*setup|setup\b.*scan)/.test(t)) return 'install';
+
+    // R&D / recording / video
+    if (/\b(r&d|r\s*&\s*d|video\s*recording|recording|demo)\b/.test(t)) return 'rd';
+
+    // Training / dry run / hold training
+    if (/\b(training|dry\s*run|peer\s*to\s*peer|workshop)\b/.test(t)) return 'training';
+
+    // Meeting
+    if (/\bmeeting\b/.test(t)) return 'meeting';
+
+    // Lab session: ENT Immersion Lab, Dr. X, surgeon names, "lab" keyword
+    if (/\bent\s*immersion\s*lab\b/.test(t)) return 'lab';
+    if (/\bdr\.?\s/.test(t)) return 'lab';
+    if (/\blab\b/.test(t)) return 'lab';
+
+    return 'other';
+  }
+
+  // ── Build calendar window with tasks ──────────────────────────────
+  function buildDays() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const days = [];
+    for (let i = 0; i < cfg.daysAhead + 1; i++) {
+      const d = addDays(today, i);
+      days.push({
+        dateKey: ymd(d),
+        dateObj: d,
+        isToday: i === 0,
+        isPast: false,
+        events: [],
+        eventGroups: [],
+        dailyOps: [],
+      });
+    }
+    const byKey = Object.fromEntries(days.map(d => [d.dateKey, d]));
+
+    // Place each event on its day (and generate its task footprint across nearby days)
+    // We'll keep `events` (the literal event on that calendar day) and
+    // `eventGroups` (grouped by event id, with that day's tasks for this event).
+    state.events.forEach(evt => {
+      // Role-level event filter (Latisha sees only events tagged for her)
+      if (!isEventVisibleForRole(evt)) return;
+
+      const startKey = (evt.start_dt || '').slice(0, 10);
+      const endKey = (evt.end_dt || evt.start_dt || '').slice(0, 10);
+      const cat = classifyEvent(evt);
+      const tmpl = TASK_TEMPLATES[cat] || TASK_TEMPLATES.other;
+
+      // Event itself appears on each calendar day it spans (inclusive)
+      const startD = parseYMD(startKey);
+      const endD = parseYMD(endKey);
+      const spanDays = Math.max(0, Math.round((endD - startD) / 86400000));
+      for (let i = 0; i <= spanDays; i++) {
+        const dK = ymd(addDays(startD, i));
+        if (byKey[dK]) byKey[dK].events.push({ ...evt, _category: cat, _label: tmpl.label, _cssClass: tmpl.cssClass, _isStart: i === 0, _isEnd: i === spanDays });
+      }
+
+      // Tasks: each task has an offset (days BEFORE event date). offset > 0 = before, 0 = day of, negative = after.
+      // Weekend rule: if a task lands on Sat/Sun and the EVENT itself is on a weekday,
+      // shift the task to the nearest weekday — pre-event tasks go backward to Friday,
+      // post-event tasks go forward to Monday. Day-of (offset 0) follows the event date.
+      const eventOnWeekend = isWeekend(startD);
+      tmpl.tasks.forEach(task => {
+        // Role filter — non-master roles only see tasks tagged for them (or universal)
+        if (!isTaskVisibleForRole(task)) return;
+        let taskDate = addDays(startD, -task.offset);
+        if (!eventOnWeekend && isWeekend(taskDate)) {
+          if (task.offset >= 0) {
+            // pre-event: slide backward to nearest Friday
+            while (isWeekend(taskDate)) taskDate = addDays(taskDate, -1);
+          } else {
+            // post-event: slide forward to nearest Monday
+            while (isWeekend(taskDate)) taskDate = addDays(taskDate, 1);
+          }
+        }
+        const dK = ymd(taskDate);
+        if (!byKey[dK]) return;
+        let group = byKey[dK].eventGroups.find(g => g.eventId === evt.id);
+        if (!group) {
+          group = {
+            eventId: evt.id,
+            event: evt,
+            category: cat,
+            label: tmpl.label,
+            cssClass: tmpl.cssClass,
+            eventDate: startKey,
+            tasks: [],
+          };
+          byKey[dK].eventGroups.push(group);
+        }
+        group.tasks.push({
+          id: task.id,
+          text: task.text,
+          offset: task.offset,
+          action: task.action || null,
+          roles: task.roles || null,
+          checkKey: 'evt:' + evt.id + ':' + task.id,
+          relativeLabel: task.offset > 0 ? `T-${task.offset}` : task.offset === 0 ? 'Day of' : `T+${Math.abs(task.offset)}`,
+        });
+      });
+    });
+
+    // Daily ops on every weekday — and weekend days that have an event scheduled
+    // Hidden entirely for roles that don't show daily ops (Ana Maria, Latisha)
+    days.forEach(day => {
+      if (!CURRENT_ROLE.showDailyOps) return;
+      if (isWeekend(day.dateObj) && day.events.length === 0) return;
+      DAILY_OPS.forEach(op => {
+        const opEntry = {
+          id: op.id,
+          text: op.text,
+          action: op.action || null,
+          checkKey: 'daily:' + day.dateKey + ':' + op.id,
+          subTasks: (op.subTasks || []).map(st => ({
+            id: st.id,
+            text: st.text,
+            checkKey: 'daily:' + day.dateKey + ':' + st.id,
+          })),
+        };
+        day.dailyOps.push(opEntry);
+      });
+    });
+
+    state.days = days;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────
+  function isChecked(key) { return !!CHECKS[key]; }
+  function setChecked(key, val) {
+    if (val) CHECKS[key] = 1;
+    else delete CHECKS[key];
+    saveChecks(CHECKS);
+  }
+
+  // Flatten dailyOps to leaf tasks: items with subTasks contribute their subTasks instead of themselves
+  function dailyOpsLeaves(day) {
+    const leaves = [];
+    day.dailyOps.forEach(op => {
+      if (op.subTasks && op.subTasks.length) leaves.push(...op.subTasks);
+      else leaves.push(op);
+    });
+    return leaves;
+  }
+
+  // ── Rollover: collect all unchecked tasks scheduled in the past N days ─
+  const ROLLOVER_LOOKBACK_DAYS = 14;
+  function buildRolledOverTasks() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayKey = ymd(today);
+    const earliest = addDays(today, -ROLLOVER_LOOKBACK_DAYS);
+    const earliestKey = ymd(earliest);
+    const overdue = [];
+
+    // 1) Event-derived tasks (any past date < today)
+    state.events.forEach(evt => {
+      const startKey = (evt.start_dt || '').slice(0, 10);
+      if (!startKey) return;
+      const startD = parseYMD(startKey);
+      const cat = classifyEvent(evt);
+      const tmpl = TASK_TEMPLATES[cat] || TASK_TEMPLATES.other;
+      tmpl.tasks.forEach(task => {
+        const taskDate = addDays(startD, -task.offset);
+        const taskKey = ymd(taskDate);
+        if (taskKey >= todayKey || taskKey < earliestKey) return;
+        const checkKey = 'evt:' + evt.id + ':' + task.id;
+        if (isChecked(checkKey)) return;
+        overdue.push({
+          source: 'event',
+          text: task.text,
+          action: task.action || null,
+          checkKey,
+          scheduledKey: taskKey,
+          scheduledD:   taskDate,
+          eventId:  evt.id,
+          event:    evt,
+          category: cat,
+          label:    tmpl.label,
+          cssClass: tmpl.cssClass,
+          relativeLabel: task.offset > 0 ? `T-${task.offset}` : task.offset === 0 ? 'Day of' : `T+${Math.abs(task.offset)}`,
+        });
+      });
+    });
+
+    // 2) Daily ops — skip weekends UNLESS there was an event scheduled that day
+    for (let i = 1; i <= ROLLOVER_LOOKBACK_DAYS; i++) {
+      const d = addDays(today, -i);
+      const dKey = ymd(d);
+      if (isWeekend(d)) {
+        const hadEvent = state.events.some(evt => (evt.start_dt || '').slice(0, 10) === dKey);
+        if (!hadEvent) continue;
+      }
+      DAILY_OPS.forEach(op => {
+        const items = (op.subTasks && op.subTasks.length)
+          ? op.subTasks.map(s => ({ id: s.id, text: s.text, parent: op }))
+          : [{ id: op.id, text: op.text, parent: null, action: op.action }];
+        items.forEach(item => {
+          const checkKey = 'daily:' + dKey + ':' + item.id;
+          if (isChecked(checkKey)) return;
+          overdue.push({
+            source: 'daily',
+            text: item.text,
+            parentText: item.parent ? item.parent.text : null,
+            action: item.action || (item.parent && item.parent.action) || null,
+            checkKey,
+            scheduledKey: dKey,
+            scheduledD:   d,
+          });
+        });
+      });
+    }
+
+    // Sort oldest first
+    overdue.sort((a, b) => a.scheduledKey.localeCompare(b.scheduledKey));
+    return overdue;
+  }
+
+  function fmtRolloverDate(d) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - d) / 86400000);
+    if (diff === 1) return 'yesterday';
+    if (diff <= 7) return `${diff} days ago`;
+    return `${DOW[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+  }
+
+  function dayIsActive(day) {
+    return day.eventGroups.length > 0 || day.events.length > 0 || day.dailyOps.length > 0;
+  }
+  function dayHasIncomplete(day) {
+    const all = [
+      ...day.eventGroups.flatMap(g => g.tasks),
+      ...dailyOpsLeaves(day),
+    ];
+    return all.some(t => !isChecked(t.checkKey));
+  }
+
+  function shouldShowDay(day) {
+    if (state.filter === 'all') return true;
+    if (state.filter === 'active') return dayIsActive(day);
+    if (state.filter === 'incomplete') return dayHasIncomplete(day);
+    return true;
+  }
+
+  function renderTodayBanner() {
+    if (CURRENT_VIEW === 'team') { bannerWrap.innerHTML = ''; return; }
+    const today = state.days[0];
+    if (!today) { bannerWrap.innerHTML = ''; return; }
+
+    const todayLeaves = dailyOpsLeaves(today);
+    const totalTasks = today.eventGroups.flatMap(g => g.tasks).length + todayLeaves.length;
+    const doneTasks = [
+      ...today.eventGroups.flatMap(g => g.tasks),
+      ...todayLeaves,
+    ].filter(t => isChecked(t.checkKey)).length;
+
+    const eventCount = today.events.length;
+    const eventTitles = today.events.slice(0, 3).map(e => e.title || '(untitled)').join(' · ') || 'No events scheduled today';
+
+    const rolledCount = buildRolledOverTasks().length;
+    bannerWrap.innerHTML = `
+      <div class="today-banner">
+        <h2>Today</h2>
+        <div class="today-date">${fmtDate(today.dateObj)}</div>
+        <div class="today-summary">
+          ${eventCount > 0 ? `${eventCount} event${eventCount === 1 ? '' : 's'} on calendar` : 'No events on calendar'}
+          &nbsp;·&nbsp;
+          ${doneTasks} of ${totalTasks} task${totalTasks === 1 ? '' : 's'} complete
+          ${rolledCount > 0 ? `&nbsp;·&nbsp;<strong style="color:#fbe8a6;">⚠ ${rolledCount} rolled over from earlier</strong>` : ''}
+          ${totalTasks > 0 && eventCount > 0 ? ' · ' + eventTitles : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderProgress() {
+    let total = 0, done = 0;
+    state.days.forEach(d => {
+      const tasks = [...d.eventGroups.flatMap(g => g.tasks), ...dailyOpsLeaves(d)];
+      total += tasks.length;
+      done += tasks.filter(t => isChecked(t.checkKey)).length;
+    });
+    progressTextEl.textContent = total === 0 ? 'No tasks' : `${done} / ${total} tasks done`;
+    progressBarEl.style.width = total === 0 ? '0%' : Math.round(done / total * 100) + '%';
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function renderDay(day) {
+    const dow = DOW[day.dateObj.getDay()];
+    const monthDay = MONTHS_SHORT[day.dateObj.getMonth()] + ' ' + day.dateObj.getDate();
+    const headerClass = day.isToday ? 'is-today-header' : '';
+    const cardClasses = ['day-card'];
+    if (day.isToday) cardClasses.push('is-today');
+    if (state.allCollapsed && !day.isToday) cardClasses.push('collapsed');
+    if (!dayIsActive(day)) cardClasses.push('is-empty');
+
+    // count tasks on this day
+    const allTasks = [...day.eventGroups.flatMap(g => g.tasks), ...dailyOpsLeaves(day)];
+    const total = allTasks.length;
+    const done = allTasks.filter(t => isChecked(t.checkKey)).length;
+
+    const countPill = total === 0
+      ? `<span class="count-pill" style="background:#f4f6f9;color:#aaa;">No tasks</span>`
+      : (done === total
+          ? `<span class="count-pill complete">✓ ${done}/${total}</span>`
+          : `<span class="count-pill">${done}/${total}</span>`);
+
+    // Build event groups HTML
+    const infoEvents = day.events.filter(e => {
+      const c = e._category;
+      return c === 'closed' || c === 'hold' || c === 'remote';
+    });
+    const infoHtml = infoEvents.map(e => `
+      <div class="event-info">
+        <div class="info-icon">i</div>
+        <div><strong>${escapeHtml(e.title || '(untitled)')}</strong> &mdash; <span style="color:#888;">${TASK_TEMPLATES[e._category]?.label || ''}</span></div>
+      </div>
+    `).join('');
+
+    const groupsHtml = day.eventGroups.map(group => {
+      const tasksHtml = group.tasks.map(t => {
+        const checked = isChecked(t.checkKey);
+        const relTagClass = t.offset === 0 ? 'day-of' : (t.offset < 0 ? 'after' : '');
+        // Special-action tasks (e.g. cadaver log) get an inline button after the text
+        const actionBtn = (t.action === 'cadaverLog' && CURRENT_ROLE.showCadaverLog) ? `
+          <button type="button" class="btn-cadaver-task"
+                  data-event-id="${escapeHtml(String(group.eventId))}"
+                  data-category="${escapeHtml(group.category)}"
+                  style="margin-left:8px;background:#fff;border:1.5px solid #c2185b;color:#c2185b;font-size:0.72rem;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;">
+            Open log →
+          </button>
+        ` : '';
+        // Role badge in master view
+        const roleBadge = (CURRENT_ROLE.showRoleBadges && t.roles && t.roles.length) ? t.roles.map(r => {
+          const rcfg = ROLES[r];
+          if (!rcfg) return '';
+          return `<span style="margin-left:6px;font-size:0.65rem;font-weight:700;letter-spacing:0.4px;padding:1px 6px;border-radius:3px;background:${rcfg.color};color:#fff;text-transform:uppercase;">${escapeHtml((rcfg.name || r).split(' ')[0])}</span>`;
+        }).join('') : '';
+        return `
+          <label class="task ${checked ? 'done' : ''}" data-key="${escapeHtml(t.checkKey)}">
+            <input type="checkbox" ${checked ? 'checked' : ''} />
+            <span class="task-text">${escapeHtml(t.text)}<span class="relative-tag ${relTagClass}">${t.relativeLabel}</span>${roleBadge}${actionBtn}</span>
+          </label>
+        `;
+      }).join('');
+
+      const eventD = parseYMD(group.eventDate);
+      const eventDateLabel = isToday(eventD) ? 'today' : (group.eventDate === ymd(addDays(new Date(), 1)) ? 'tomorrow' : MONTHS_SHORT[eventD.getMonth()] + ' ' + eventD.getDate());
+
+      // Show "Generate order/restock email" button on the event-day card,
+      // for any category that has catalog entries OR a template (so manual
+      // adds via the picker still work even with empty defaults).
+      const catalog = RESTOCK_CATALOG[group.category] || [];
+      const hasTemplate = !!EMAIL_TEMPLATES[group.category];
+      const showRestockBtn = CURRENT_ROLE.showRestockEmail
+                          && (catalog.length > 0 || hasTemplate)
+                          && day.dateKey === group.eventDate;
+      // Pick verb based on whether the event is upcoming or past
+      const today = new Date(); today.setHours(0,0,0,0);
+      const evtDate = parseYMD(group.eventDate);
+      const buttonLabel = evtDate < today ? 'Generate restock email' : 'Generate order email';
+      const restockBtnHtml = showRestockBtn ? `
+        <button class="btn-restock" data-event-id="${escapeHtml(String(group.eventId))}" data-category="${escapeHtml(group.category)}" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 14h8"/></svg>
+          ${buttonLabel}
+        </button>
+      ` : '';
+
+      return `
+        <div class="event-group ${group.cssClass}">
+          <div class="event-title">
+            <span class="event-tag">${escapeHtml(group.label)}</span>
+            ${escapeHtml(group.event.title || '(untitled)')}
+          </div>
+          <div class="event-meta">Event date: ${escapeHtml(eventDateLabel)}</div>
+          <div class="task-list">${tasksHtml}</div>
+          ${restockBtnHtml}
+        </div>
+      `;
+    }).join('');
+
+    const opsHtml = day.dailyOps.length === 0 ? '' : `
+      <div class="daily-ops-block">
+        <div class="ops-title">Daily Operations</div>
+        <div class="task-list">
+          ${day.dailyOps.map(t => {
+            const subs = t.subTasks || [];
+            // Parent is "checked" if all sub-tasks are checked AND its own box (no subs case) is checked
+            const allSubsDone = subs.length > 0 && subs.every(s => isChecked(s.checkKey));
+            const checked = subs.length ? allSubsDone : isChecked(t.checkKey);
+
+            const actionBtn = t.action === 'labSupplyPar' ? `
+              <button type="button" class="btn-par-check" data-action="labSupplyPar" data-date="${escapeHtml(day.dateKey)}"
+                      style="margin-left:8px;background:#fff;border:1.5px solid #00838f;color:#00838f;font-size:0.72rem;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;">
+                Open par check →
+              </button>` : t.action === 'medtronicPar' ? `
+              <button type="button" class="btn-par-check" data-action="medtronicPar" data-date="${escapeHtml(day.dateKey)}"
+                      style="margin-left:8px;background:#fff;border:1.5px solid #003da5;color:#003da5;font-size:0.72rem;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;">
+                Open par check →
+              </button>` : '';
+
+            const subTasksHtml = subs.length ? `
+              <div style="margin-left:28px;margin-top:2px;border-left:1.5px solid #e0e6f0;padding-left:10px;">
+                ${subs.map(s => {
+                  const sChecked = isChecked(s.checkKey);
+                  return `
+                    <label class="task ${sChecked ? 'done' : ''}" data-key="${escapeHtml(s.checkKey)}">
+                      <input type="checkbox" ${sChecked ? 'checked' : ''} />
+                      <span class="task-text" style="font-size:0.86rem;">${escapeHtml(s.text)}</span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+            ` : '';
+
+            return `
+              <label class="task ${checked ? 'done' : ''}" data-key="${escapeHtml(t.checkKey)}" data-parent-of="${subs.length ? subs.map(s => s.checkKey).join(',') : ''}">
+                <input type="checkbox" ${checked ? 'checked' : ''} ${subs.length ? 'data-is-parent="1"' : ''} />
+                <span class="task-text">${escapeHtml(t.text)}${actionBtn}</span>
+              </label>
+              ${subTasksHtml}
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    // Rolled over tasks — only on today's card
+    let rolledHtml = '';
+    if (day.isToday) {
+      const rolled = buildRolledOverTasks();
+      if (rolled.length) {
+        const itemsHtml = rolled.map(t => {
+          const dateLabel = fmtRolloverDate(t.scheduledD);
+          // Action button (cadaver log or par check) if applicable
+          let actionBtn = '';
+          if (t.action === 'cadaverLog' && t.event) {
+            actionBtn = `<button type="button" class="btn-cadaver-task"
+                data-event-id="${escapeHtml(String(t.event.id))}"
+                data-category="${escapeHtml(t.category)}"
+                style="margin-left:8px;background:#fff;border:1.5px solid #c2185b;color:#c2185b;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">Open log →</button>`;
+          } else if (t.action === 'labSupplyPar') {
+            actionBtn = `<button type="button" class="btn-par-check" data-action="labSupplyPar" data-date="${escapeHtml(day.dateKey)}"
+                style="margin-left:8px;background:#fff;border:1.5px solid #00838f;color:#00838f;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">Open par check →</button>`;
+          } else if (t.action === 'medtronicPar') {
+            actionBtn = `<button type="button" class="btn-par-check" data-action="medtronicPar" data-date="${escapeHtml(day.dateKey)}"
+                style="margin-left:8px;background:#fff;border:1.5px solid #003da5;color:#003da5;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;font-family:inherit;">Open par check →</button>`;
+          }
+          // Context tag: parent label, event title, or daily-op parent
+          let context = '';
+          if (t.source === 'event' && t.event) {
+            context = `<span style="color:#888;font-size:0.78rem;"> · ${escapeHtml(t.label)}: ${escapeHtml((t.event.title || '').slice(0, 60))}</span>`;
+          } else if (t.parentText) {
+            context = `<span style="color:#888;font-size:0.78rem;"> · ${escapeHtml(t.parentText)}</span>`;
+          }
+          return `
+            <label class="task" data-key="${escapeHtml(t.checkKey)}" style="background:#fff8e8;border-radius:6px;padding:7px 8px;">
+              <input type="checkbox" />
+              <span class="task-text">${escapeHtml(t.text)}<span class="relative-tag" style="background:#fce4a6;color:#7a5400;">${escapeHtml(dateLabel)}</span>${context}${actionBtn}</span>
+            </label>
+          `;
+        }).join('');
+        const collapsed = localStorage.getItem(ADMIN_CONFIG.storageNamespace + '.rollover.collapsed') === '1';
+        rolledHtml = `
+          <div class="daily-ops-block rollover-block ${collapsed ? 'collapsed' : ''}" style="background:#fffaef;border:1px solid #f5e0ad;margin-top:10px;">
+            <div class="ops-title rollover-toggle"
+                 style="color:#7a5400;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span>
+                <svg class="chev-rollover" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                     style="vertical-align:middle;margin-right:6px;transition:transform 0.2s;${collapsed ? 'transform:rotate(-90deg);' : ''}">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                Rolled over from earlier (${rolled.length})
+              </span>
+              <span style="font-size:0.7rem;font-weight:600;color:#a17c2c;">${collapsed ? 'Show' : 'Hide'}</span>
+            </div>
+            <div class="task-list rollover-body" style="${collapsed ? 'display:none;' : ''}">${itemsHtml}</div>
+          </div>
+        `;
+      }
+    }
+
+    let bodyContent = '';
+    if (infoHtml) bodyContent += infoHtml;
+    if (groupsHtml) bodyContent += groupsHtml;
+    if (opsHtml) bodyContent += opsHtml;
+    if (rolledHtml) bodyContent += rolledHtml;
+    if (!bodyContent) bodyContent = `<div class="empty-state-text">Nothing scheduled.</div>`;
+
+    return `
+      <div class="${cardClasses.join(' ')}" data-date="${day.dateKey}">
+        <div class="day-header ${headerClass}">
+          <div class="day-left">
+            <span class="day-dow">${day.isToday ? 'Today · ' : ''}${dow}</span>
+            <span class="day-title">${monthDay}</span>
+            ${day.events.length > 0 ? `<span class="day-meta">${day.events.length} event${day.events.length === 1 ? '' : 's'}</span>` : ''}
+          </div>
+          <div class="day-right">
+            ${countPill}
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+        <div class="day-body">${bodyContent}</div>
+      </div>
+    `;
+  }
+
+  function renderAll() {
+    renderTodayBanner();
+    renderProgress();
+
+    if (CURRENT_VIEW === 'team') {
+      renderTeamStatus();
+      return;
+    }
+
+    const visibleDays = state.days.filter(shouldShowDay);
+    if (visibleDays.length === 0) {
+      dashEl.innerHTML = `<div class="event-info"><div class="info-icon">i</div><div>No days match the current filter.</div></div>`;
+      return;
+    }
+
+    dashEl.innerHTML = visibleDays.map(renderDay).join('');
+
+    // Wire up checkbox toggles
+    dashEl.querySelectorAll('label.task').forEach(lbl => {
+      lbl.addEventListener('change', (e) => {
+        const key = lbl.getAttribute('data-key');
+        const checkbox = lbl.querySelector('input[type="checkbox"]');
+        const parentOf = lbl.getAttribute('data-parent-of');
+
+        if (parentOf) {
+          // Parent task: cascade check state to all sub-tasks
+          parentOf.split(',').filter(Boolean).forEach(subKey => {
+            setChecked(subKey, checkbox.checked);
+          });
+          // Re-render to update sub-task visuals
+          renderAll();
+          return;
+        }
+
+        setChecked(key, checkbox.checked);
+        lbl.classList.toggle('done', checkbox.checked);
+
+        // If this is a sub-task, the parent's visual state may have changed
+        // (e.g. all sibs now checked → parent should appear checked). Cheapest
+        // path: full re-render. Only do it for daily-ops keys.
+        if (key.startsWith('daily:')) {
+          renderAll();
+          return;
+        }
+
+        // re-render banner + progress + that day's count pill (cheap full re-render)
+        renderTodayBanner();
+        renderProgress();
+        // update the count pill in this day card
+        const card = lbl.closest('.day-card');
+        if (card) {
+          const dateKey = card.getAttribute('data-date');
+          const day = state.days.find(d => d.dateKey === dateKey);
+          if (day) {
+            const allTasks = [...day.eventGroups.flatMap(g => g.tasks), ...dailyOpsLeaves(day)];
+            const total = allTasks.length;
+            const done = allTasks.filter(t => isChecked(t.checkKey)).length;
+            const pill = card.querySelector('.count-pill');
+            if (pill) {
+              pill.classList.remove('complete');
+              if (done === total && total > 0) {
+                pill.classList.add('complete');
+                pill.textContent = `✓ ${done}/${total}`;
+              } else {
+                pill.textContent = `${done}/${total}`;
+              }
+            }
+          }
+        }
+      });
+    });
+
+    // Wire up day-header collapse
+    dashEl.querySelectorAll('.day-header').forEach(hdr => {
+      hdr.addEventListener('click', (e) => {
+        if (e.target.closest('label.task')) return;
+        if (e.target.closest('.btn-restock')) return;
+        const card = hdr.closest('.day-card');
+        card.classList.toggle('collapsed');
+      });
+    });
+
+    // Wire up restock buttons
+    dashEl.querySelectorAll('.btn-restock').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const eventId = btn.getAttribute('data-event-id');
+        const category = btn.getAttribute('data-category');
+        const evt = state.events.find(ev => String(ev.id) === eventId);
+        if (!evt) return;
+        openRestockModal(evt, category);
+      });
+    });
+
+    // Wire up cadaver-log buttons (inline on the task line)
+    dashEl.querySelectorAll('.btn-cadaver-task').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const eventId = btn.getAttribute('data-event-id');
+        const category = btn.getAttribute('data-category');
+        const evt = state.events.find(ev => String(ev.id) === eventId);
+        if (!evt) return;
+        openCadaverModal(evt, category);
+      });
+    });
+
+    // Wire up par-check buttons (Lab Supply / Medtronic)
+    dashEl.querySelectorAll('.btn-par-check').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const action = btn.getAttribute('data-action');
+        const dateKey = btn.getAttribute('data-date');
+        if (action === 'labSupplyPar') openParModal('labSupply', dateKey);
+        else if (action === 'medtronicPar') openParModal('medtronic', dateKey);
+      });
+    });
+
+    // Wire up the Rolled-over collapse toggle
+    dashEl.querySelectorAll('.rollover-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const block = toggle.closest('.rollover-block');
+        const body  = block.querySelector('.rollover-body');
+        const chev  = block.querySelector('.chev-rollover');
+        const label = toggle.querySelector('span:last-child');
+        const willCollapse = !block.classList.contains('collapsed');
+        block.classList.toggle('collapsed', willCollapse);
+        body.style.display = willCollapse ? 'none' : '';
+        if (chev) chev.style.transform = willCollapse ? 'rotate(-90deg)' : '';
+        if (label) label.textContent = willCollapse ? 'Show' : 'Hide';
+        localStorage.setItem(ADMIN_CONFIG.storageNamespace + '.rollover.collapsed', willCollapse ? '1' : '0');
+      });
+    });
+  }
+
+  // ── Restock Email ─────────────────────────────────────────────────
+  // Modal state
+  const restockState = {
+    event: null,
+    category: 'other',
+    variant: 'default', // for category=lab; ignored otherwise
+    items: [],   // [{ partNumber, description, qty, unit }]
+    timing: 'post', // 'pre' or 'post'
+  };
+
+  function setTimingChip(timing) {
+    restockState.timing = timing;
+    document.querySelectorAll('.timing-chip').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('data-timing') === timing);
+    });
+    // Sync subject prefix if a subject is already filled in by openRestockModal
+    if (restockState.event && modalSubject.value) {
+      const prefix = timing === 'pre' ? 'Order Request' : 'Restock Request';
+      modalSubject.value = modalSubject.value.replace(/^(Restock Request|Order Request)/, prefix);
+    }
+  }
+  // Wire the toggle once
+  document.querySelectorAll('.timing-chip').forEach(el => {
+    el.addEventListener('click', () => setTimingChip(el.getAttribute('data-timing')));
+  });
+
+  const modal           = document.getElementById('restock-modal');
+  const modalTo         = document.getElementById('restock-to');
+  const modalCc         = document.getElementById('restock-cc');
+  const modalDsmSelect  = document.getElementById('restock-dsm');
+  const modalCcDisplay  = document.getElementById('restock-cc-display');
+  const modalSubject    = document.getElementById('restock-subject');
+  const modalNotes      = document.getElementById('restock-notes');
+  const modalClose      = document.getElementById('restock-close');
+  const modalSend       = document.getElementById('restock-send');
+  const modalCopy       = document.getElementById('restock-copy');
+  const modalPreview    = document.getElementById('restock-preview');
+  const itemsTbody      = document.getElementById('items-tbody');
+  const itemsEmpty      = document.getElementById('items-empty');
+  const pickerInput     = document.getElementById('picker-input');
+  const pickerResults   = document.getElementById('picker-results');
+  const variantRow      = document.getElementById('variant-row');
+  const variantSelect   = document.getElementById('restock-variant');
+
+  // Populate Lab variant dropdown once
+  (function populateVariantSelect() {
+    const opts = Object.entries(LAB_VARIANTS).map(([key, v]) =>
+      `<option value="${escapeHtml(key)}">${escapeHtml(v.label)} (${v.items.length} items)</option>`
+    ).join('');
+    variantSelect.innerHTML = opts;
+  })();
+
+  // Per-event variant preferences (sticky)
+  function loadVariantPrefs() {
+    try {
+      const raw = localStorage.getItem(ADMIN_CONFIG.storageNamespace + '.variantPrefs');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveVariantPrefs(p) {
+    try { localStorage.setItem(ADMIN_CONFIG.storageNamespace + '.variantPrefs', JSON.stringify(p)); } catch (e) {}
+  }
+
+  variantSelect.addEventListener('change', () => {
+    const variantKey = variantSelect.value;
+    const variant = LAB_VARIANTS[variantKey];
+    if (!variant) return;
+    // If user has unsaved edits, confirm before clobbering
+    if (restockState.items.length > 0) {
+      const ok = confirm(`Replace current items with the "${variant.label}" kit (${variant.items.length} items)?`);
+      if (!ok) {
+        // revert dropdown to previous value
+        variantSelect.value = restockState.variant || 'default';
+        return;
+      }
+    }
+    restockState.variant = variantKey;
+    restockState.items = variant.items.map(p => ({ ...p, unit: p.unit || 'ea' }));
+    renderItemsTable();
+    // persist
+    if (restockState.event && restockState.event.id) {
+      const prefs = loadVariantPrefs();
+      prefs[restockState.event.id] = variantKey;
+      saveVariantPrefs(prefs);
+    }
+  });
+
+  // Populate DSM dropdown once (sorted: Med Ed pinned, then alphabetical)
+  (function populateDsmSelect() {
+    const sorted = DSMS.slice().sort((a, b) => {
+      if (a.name === "Med Ed") return -1;
+      if (b.name === "Med Ed") return 1;
+      return a.name.localeCompare(b.name);
+    });
+    modalDsmSelect.innerHTML = sorted.map(d =>
+      `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)} — CC ${escapeHtml(d.cc)}</option>`
+    ).join('');
+  })();
+
+  modalDsmSelect.addEventListener('change', () => {
+    const d = dsmByName(modalDsmSelect.value);
+    modalCcDisplay.textContent = d.cc;
+    // Persist per-event so reopening remembers
+    if (restockState.event && restockState.event.id) {
+      const prefs = loadDsmPrefs();
+      prefs[restockState.event.id] = d.name;
+      saveDsmPrefs(prefs);
+    }
+  });
+
+  // ── Per-event DSM preferences (sticky across sessions) ──────────
+  function loadDsmPrefs() {
+    try {
+      const raw = localStorage.getItem(ADMIN_CONFIG.storageNamespace + '.dsmPrefs');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveDsmPrefs(p) {
+    try { localStorage.setItem(ADMIN_CONFIG.storageNamespace + '.dsmPrefs', JSON.stringify(p)); } catch (e) {}
+  }
+
+  function buildEmailBody() {
+    const cc = ADMIN_CONFIG.restockEmail;
+    const tmpl = TASK_TEMPLATES[restockState.category] || TASK_TEMPLATES.other;
+    const evt = restockState.event;
+    const eventDate = (evt.start_dt || '').slice(0, 10);
+    const eventD = parseYMD(eventDate);
+    const eventDateStr = MONTHS_SHORT[eventD.getMonth()] + ' ' + eventD.getDate() + ', ' + eventD.getFullYear();
+    const items = restockState.items;
+    const dsm = dsmByName(modalDsmSelect.value);
+    const surgeon = detectSurgeonFromTitle(evt.title);
+    const timing = restockState.timing || 'post';
+
+    // Pick template variant
+    const templates = EMAIL_TEMPLATES[restockState.category] || EMAIL_TEMPLATES.other;
+    const tplStr = templates[timing] || templates.post;
+    const opening = renderTemplate(tplStr, {
+      address:    cc.address,
+      dsmCC:      dsm.cc,
+      dsmName:    dsm.name,
+      eventDate:  eventDateStr,
+      eventTitle: evt.title || '',
+      surgeon:    surgeon,
+      tmplLabel:  tmpl.label,
+      fromLab:    cc.fromLab,
+    });
+    const closing = renderTemplate(EMAIL_CLOSING_TEMPLATE, {
+      contactName:  cc.contactName,
+      contactEmail: cc.contactEmail,
+      contactPhone: cc.contactPhone || '',
+      fromLab:      cc.fromLab,
+    });
+
+    // Format items as a simple bullet list (matches the natural "please order
+    // the following:" framing better than a fixed-width table)
+    const itemLines = items.length
+      ? items.map(p => `• Qty ${p.qty} ${p.unit || 'ea'} — ${p.partNumber} — ${p.description}`)
+      : ['(no items selected)'];
+
+    const parts = [opening, '', ...itemLines];
+
+    if (modalNotes.value.trim()) {
+      parts.push('', modalNotes.value.trim());
+    }
+    parts.push('', closing);
+    return parts.join('\n');
+  }
+
+  function renderItemsTable() {
+    if (!restockState.items.length) {
+      itemsTbody.innerHTML = '';
+      itemsEmpty.style.display = 'block';
+      return;
+    }
+    itemsEmpty.style.display = 'none';
+    itemsTbody.innerHTML = restockState.items.map((p, i) => `
+      <tr data-idx="${i}">
+        <td class="pn-cell">${escapeHtml(p.partNumber)}</td>
+        <td class="desc-cell">${escapeHtml(p.description)}</td>
+        <td><input type="number" min="1" value="${p.qty}" data-field="qty" data-idx="${i}" /></td>
+        <td><input type="text" class="unit" value="${escapeHtml(p.unit || 'ea')}" data-field="unit" data-idx="${i}" /></td>
+        <td><button type="button" class="remove-btn" data-idx="${i}" title="Remove">×</button></td>
+      </tr>
+    `).join('');
+
+    itemsTbody.querySelectorAll('input[data-field]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const idx = parseInt(inp.getAttribute('data-idx'), 10);
+        const field = inp.getAttribute('data-field');
+        if (field === 'qty') {
+          restockState.items[idx].qty = Math.max(1, parseInt(inp.value, 10) || 1);
+        } else {
+          restockState.items[idx].unit = inp.value.trim() || 'ea';
+        }
+      });
+    });
+    itemsTbody.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        restockState.items.splice(idx, 1);
+        renderItemsTable();
+      });
+    });
+  }
+
+  function searchCatalog(q) {
+    if (!q) return MEDTRONIC_CATALOG.slice(0, 12);
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return MEDTRONIC_CATALOG.filter(p => {
+      const blob = (p.pn + ' ' + p.desc + ' ' + p.cat + ' ' + (p.sub || '')).toLowerCase();
+      return tokens.every(t => blob.includes(t));
+    }).slice(0, 25);
+  }
+
+  function renderPicker(q) {
+    const results = searchCatalog(q);
+    if (!results.length) {
+      pickerResults.innerHTML = '<div class="picker-empty">No matches in catalog.</div>';
+      pickerResults.classList.add('open');
+      return;
+    }
+    const existingPns = new Set(restockState.items.map(p => p.partNumber));
+    pickerResults.innerHTML = results.map(p => `
+      <div class="picker-row">
+        <span class="pn">${escapeHtml(p.pn)}</span>
+        <div class="info">
+          <div class="desc">${escapeHtml(p.desc)}</div>
+          <div class="meta">${escapeHtml(p.cat)}${p.sub ? ' · ' + escapeHtml(p.sub) : ''}</div>
+        </div>
+        <button type="button" class="add-btn" data-pn="${escapeHtml(p.pn)}" ${existingPns.has(p.pn) ? 'disabled' : ''}>${existingPns.has(p.pn) ? 'Added' : '+ Add'}</button>
+      </div>
+    `).join('');
+    pickerResults.querySelectorAll('.add-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const pn = b.getAttribute('data-pn');
+        if (restockState.items.some(p => p.partNumber === pn)) return;
+        const cat = CATALOG_BY_PN[pn];
+        if (!cat) return;
+        restockState.items.push({ partNumber: cat.pn, description: cat.desc, qty: 1, unit: 'ea' });
+        renderItemsTable();
+        b.disabled = true;
+        b.textContent = 'Added';
+      });
+    });
+    pickerResults.classList.add('open');
+  }
+
+  function openRestockModal(evt, category) {
+    restockState.event = evt;
+    restockState.category = category;
+
+    // For Lab events, look up the saved variant (or default)
+    const isLab = category === 'lab';
+    if (isLab) {
+      const savedVariant = (evt.id && loadVariantPrefs()[evt.id]) || 'default';
+      const variant = LAB_VARIANTS[savedVariant] ? savedVariant : 'default';
+      restockState.variant = variant;
+      restockState.items = LAB_VARIANTS[variant].items.map(p => ({ ...p, unit: p.unit || 'ea' }));
+      variantSelect.value = variant;
+      variantRow.style.display = 'block';
+    } else {
+      restockState.variant = 'default';
+      restockState.items = (RESTOCK_CATALOG[category] || []).map(p => ({ ...p, unit: p.unit || 'ea' }));
+      variantRow.style.display = 'none';
+    }
+
+    const cc = ADMIN_CONFIG.restockEmail;
+    const tmpl = TASK_TEMPLATES[category] || TASK_TEMPLATES.other;
+    const eventDate = (evt.start_dt || '').slice(0, 10);
+    const eventD = parseYMD(eventDate);
+    const eventDateStr = MONTHS_SHORT[eventD.getMonth()] + ' ' + eventD.getDate() + ', ' + eventD.getFullYear();
+
+    modalTo.value = cc.to;
+    modalCc.value = cc.cc;
+    modalNotes.value = '';
+    pickerInput.value = '';
+    pickerResults.classList.remove('open');
+
+    // Default timing: Pre-event for future/today events, Post for past
+    const today = new Date(); today.setHours(0,0,0,0);
+    const defaultTiming = eventD < today ? 'post' : 'pre';
+    setTimingChip(defaultTiming);
+
+    // Subject reflects timing
+    const subjPrefix = defaultTiming === 'pre' ? 'Order Request' : 'Restock Request';
+    modalSubject.value = `${subjPrefix} — ${cc.fromLab} — ${tmpl.label} — ${eventDateStr}`;
+
+    // Determine DSM:
+    // 1. If we already saved a choice for this event, use it
+    // 2. Otherwise, scan event title for any DSM name
+    // 3. Otherwise, fall back to the per-category default (typically Med Ed)
+    const prefs = loadDsmPrefs();
+    let chosenDsm = (evt.id && prefs[evt.id])
+                     || detectDsmFromTitle(evt.title)
+                     || CATEGORY_DEFAULT_DSM[category]
+                     || DEFAULT_DSM;
+    if (!DSMS.find(d => d.name === chosenDsm)) chosenDsm = DEFAULT_DSM;
+    modalDsmSelect.value = chosenDsm;
+    modalCcDisplay.textContent = dsmByName(chosenDsm).cc;
+
+    renderItemsTable();
+    modal.classList.add('open');
+  }
+
+  function closeRestockModal() { modal.classList.remove('open'); }
+
+  modalClose.addEventListener('click', closeRestockModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeRestockModal(); });
+
+  pickerInput.addEventListener('focus', () => renderPicker(pickerInput.value.trim()));
+  pickerInput.addEventListener('input', () => renderPicker(pickerInput.value.trim()));
+  // Click-outside-picker closes results, but keep them when clicking inside .picker-wrap
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.picker-wrap')) pickerResults.classList.remove('open');
+  });
+
+  modalPreview.addEventListener('click', () => {
+    const body = buildEmailBody();
+    alert(body);
+  });
+
+  modalSend.addEventListener('click', () => {
+    const body = buildEmailBody();
+    const to = encodeURIComponent(modalTo.value || '');
+    const cc = encodeURIComponent(modalCc.value || '');
+    const subj = encodeURIComponent(modalSubject.value || '');
+    const url = `mailto:${to}?cc=${cc}&subject=${subj}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  });
+
+  modalCopy.addEventListener('click', async () => {
+    const body = buildEmailBody();
+    const text =
+      `To: ${modalTo.value}\n` +
+      `Cc: ${modalCc.value}\n` +
+      `Subject: ${modalSubject.value}\n\n` +
+      body;
+    try {
+      await navigator.clipboard.writeText(text);
+      modalCopy.textContent = 'Copied ✓';
+      setTimeout(() => { modalCopy.textContent = 'Copy to clipboard'; }, 1500);
+    } catch (e) {
+      modalCopy.textContent = 'Copy failed';
+    }
+  });
+
+  // ── Cadaver Log ──────────────────────────────────────────────────
+  // Storage: array of { id, eventId, eventTitle, eventDate, createdAt,
+  //                     date, direction, source, courier, count, type,
+  //                     donorIds, storage, signedBy, notes }
+  const CADAVER_KEY = ADMIN_CONFIG.storageNamespace + '.cadaverLog';
+  function loadCadaverLog() {
+    try {
+      const raw = localStorage.getItem(CADAVER_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveCadaverLog(arr) {
+    try { localStorage.setItem(CADAVER_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function newCadaverId() {
+    return 'cad_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  const cadaverModal       = document.getElementById('cadaver-modal');
+  const cadaverClose       = document.getElementById('cadaver-close');
+  const cadaverCancel      = document.getElementById('cadaver-cancel');
+  const cadaverSave        = document.getElementById('cadaver-save');
+  const cadaverContext     = document.getElementById('cadaver-event-context');
+  const cadaverModalTitle  = document.getElementById('cadaver-modal-title');
+  const cadDate            = document.getElementById('cad-date');
+  const cadDirection       = document.getElementById('cad-direction');
+  const cadSource          = document.getElementById('cad-source');
+  const cadCourier         = document.getElementById('cad-courier');
+  const cadCount           = document.getElementById('cad-count');
+  const cadType            = document.getElementById('cad-type');
+  const cadDonorIds        = document.getElementById('cad-donor-ids');
+  const cadStorage         = document.getElementById('cad-storage');
+  const cadSignedBy        = document.getElementById('cad-signed-by');
+  const cadNotes           = document.getElementById('cad-notes');
+
+  let cadaverEditState = { event: null, category: null, editingId: null };
+
+  function openCadaverModal(evt, category) {
+    cadaverEditState = { event: evt, category: category, editingId: null };
+    const eventDate = (evt.start_dt || '').slice(0, 10);
+    const eventD = parseYMD(eventDate);
+    const eventDateStr = MONTHS_SHORT[eventD.getMonth()] + ' ' + eventD.getDate() + ', ' + eventD.getFullYear();
+
+    cadaverModalTitle.textContent = (category === 'specimenPickup') ? 'Cadaver Log — Disposal / Pickup' : 'Cadaver Log — Intake / Delivery';
+    cadaverContext.innerHTML = `<strong>Linked event:</strong> ${escapeHtml(evt.title || '(untitled)')}<br/><strong>Event date:</strong> ${eventDateStr}`;
+
+    // Defaults
+    cadDate.value = eventDate;
+    cadDirection.value = (category === 'specimenPickup') ? 'disposal' : 'intake';
+
+    // Try to pre-fill source/courier from event title
+    const title = (evt.title || '');
+    const m = title.match(/Science\s*Care|Meri/i);
+    cadSource.value = m ? m[0].replace(/\s+/g, ' ').trim() : '';
+    cadCourier.value = m ? m[0].replace(/\s+/g, ' ').trim() : '';
+
+    // Try to extract a count: look for a number followed by "head", "heads", "specimen"
+    const countMatch = title.match(/(\d{1,3})\s*(?:head|heads|specimen|specimens|cadaver|cadavers)/i);
+    cadCount.value = countMatch ? countMatch[1] : '';
+
+    cadType.value = 'head';
+    cadDonorIds.value = '';
+    cadStorage.value = '';
+    cadSignedBy.value = ADMIN_CONFIG.restockEmail.contactName || '';
+    cadNotes.value = '';
+
+    // If a previous entry exists for this event, load it for editing instead
+    const existing = loadCadaverLog().find(e => e.eventId === evt.id);
+    if (existing) {
+      cadaverEditState.editingId = existing.id;
+      cadDate.value       = existing.date || cadDate.value;
+      cadDirection.value  = existing.direction || cadDirection.value;
+      cadSource.value     = existing.source || '';
+      cadCourier.value    = existing.courier || '';
+      cadCount.value      = existing.count || '';
+      cadType.value       = existing.type || 'head';
+      cadDonorIds.value   = existing.donorIds || '';
+      cadStorage.value    = existing.storage || '';
+      cadSignedBy.value   = existing.signedBy || cadSignedBy.value;
+      cadNotes.value      = existing.notes || '';
+    }
+
+    cadaverModal.classList.add('open');
+  }
+
+  function closeCadaverModal() { cadaverModal.classList.remove('open'); }
+
+  cadaverClose.addEventListener('click', closeCadaverModal);
+  cadaverCancel.addEventListener('click', closeCadaverModal);
+  cadaverModal.addEventListener('click', (e) => { if (e.target === cadaverModal) closeCadaverModal(); });
+
+  cadaverSave.addEventListener('click', () => {
+    const evt = cadaverEditState.event;
+    if (!evt) return;
+    const eventDate = (evt.start_dt || '').slice(0, 10);
+    const log = loadCadaverLog();
+    const entry = {
+      id:         cadaverEditState.editingId || newCadaverId(),
+      eventId:    evt.id,
+      eventTitle: evt.title || '',
+      eventDate:  eventDate,
+      category:   cadaverEditState.category,
+      createdAt:  new Date().toISOString(),
+      date:       cadDate.value,
+      direction:  cadDirection.value,
+      source:     cadSource.value.trim(),
+      courier:    cadCourier.value.trim(),
+      count:      cadCount.value ? parseInt(cadCount.value, 10) : null,
+      type:       cadType.value,
+      donorIds:   cadDonorIds.value.trim(),
+      storage:    cadStorage.value.trim(),
+      signedBy:   cadSignedBy.value.trim(),
+      notes:      cadNotes.value.trim(),
+    };
+    if (cadaverEditState.editingId) {
+      const idx = log.findIndex(e => e.id === cadaverEditState.editingId);
+      if (idx >= 0) log[idx] = entry; else log.push(entry);
+    } else {
+      log.push(entry);
+    }
+    saveCadaverLog(log);
+
+    // Auto-check the "update-cadaver-log" task for this event
+    setChecked('evt:' + evt.id + ':update-cadaver-log', true);
+    closeCadaverModal();
+    renderAll();
+
+    // Show a brief confirmation via the toolbar button
+    const btn = document.getElementById('btn-cadaver-log');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Saved';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+
+  // ── Cadaver Log Viewer ──────────────────────────────────────────
+  const cadListModal       = document.getElementById('cadaver-list-modal');
+  const cadListClose       = document.getElementById('cadaver-list-close');
+  const cadListCloseBtn    = document.getElementById('cadaver-list-close-btn');
+  const cadListExport      = document.getElementById('cadaver-list-export');
+  const cadListSummary     = document.getElementById('cadaver-list-summary');
+  const cadListFilter      = document.getElementById('cadaver-list-filter');
+  const cadListTableWrap   = document.getElementById('cadaver-list-table-wrap');
+  const btnCadaverLog      = document.getElementById('btn-cadaver-log');
+
+  function renderCadaverList(filter) {
+    const log = loadCadaverLog().slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const f = (filter || '').toLowerCase();
+    const filtered = f ? log.filter(e => {
+      const blob = [e.date, e.direction, e.source, e.courier, e.donorIds, e.signedBy, e.eventTitle, e.notes, e.storage, e.type].join(' ').toLowerCase();
+      return blob.includes(f);
+    }) : log;
+
+    cadListSummary.textContent = filtered.length
+      ? `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'} (${log.length} total)`
+      : log.length === 0 ? 'No entries yet — log an entry from any specimen event in the dashboard.' : 'No entries match your filter.';
+
+    if (!filtered.length) {
+      cadListTableWrap.innerHTML = '';
+      return;
+    }
+
+    const rows = filtered.map(e => `
+      <tr data-id="${escapeHtml(e.id)}">
+        <td>${escapeHtml(e.date || '')}</td>
+        <td><span class="event-tag" style="background:${e.direction === 'disposal' ? '#c1281a' : (e.direction === 'transfer' ? '#0277bd' : '#2e7d32')};color:#fff;font-size:0.65rem;letter-spacing:0.5px;padding:2px 6px;border-radius:4px;text-transform:uppercase;">${escapeHtml(e.direction)}</span></td>
+        <td>${escapeHtml(e.count != null ? String(e.count) : '')}</td>
+        <td>${escapeHtml(e.type || '')}</td>
+        <td>${escapeHtml(e.source || '')}</td>
+        <td>${escapeHtml(e.donorIds || '')}</td>
+        <td>${escapeHtml(e.storage || '')}</td>
+        <td>${escapeHtml(e.signedBy || '')}</td>
+        <td style="color:#888;">${escapeHtml(e.eventTitle || '')}</td>
+        <td><button class="btn-cadaver-edit" data-id="${escapeHtml(e.id)}" type="button" style="background:none;border:none;color:#003da5;cursor:pointer;font-size:0.78rem;font-weight:600;">Edit</button></td>
+        <td><button class="btn-cadaver-del" data-id="${escapeHtml(e.id)}" type="button" style="background:none;border:none;color:#c1281a;cursor:pointer;font-size:1.05rem;line-height:1;" title="Delete">×</button></td>
+      </tr>
+    `).join('');
+
+    cadListTableWrap.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table class="items-table" style="min-width:900px;">
+          <thead>
+            <tr>
+              <th>Date</th><th>Dir</th><th>Count</th><th>Type</th>
+              <th>Source / Dest</th><th>Donor IDs</th><th>Storage</th>
+              <th>Signed By</th><th>Linked Event</th><th></th><th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+    cadListTableWrap.querySelectorAll('.btn-cadaver-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('Delete this cadaver log entry? This cannot be undone.')) return;
+        const id = b.getAttribute('data-id');
+        const updated = loadCadaverLog().filter(e => e.id !== id);
+        saveCadaverLog(updated);
+        renderCadaverList(cadListFilter.value);
+        renderAll();
+      });
+    });
+    cadListTableWrap.querySelectorAll('.btn-cadaver-edit').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.getAttribute('data-id');
+        const entry = loadCadaverLog().find(e => e.id === id);
+        if (!entry) return;
+        const evt = state.events.find(ev => ev.id === entry.eventId) || {
+          id: entry.eventId, title: entry.eventTitle, start_dt: entry.eventDate,
+        };
+        cadListModal.classList.remove('open');
+        openCadaverModal(evt, entry.category || 'specimenDelivery');
+      });
+    });
+  }
+
+  cadListClose.addEventListener('click', () => cadListModal.classList.remove('open'));
+  cadListCloseBtn.addEventListener('click', () => cadListModal.classList.remove('open'));
+  cadListModal.addEventListener('click', (e) => { if (e.target === cadListModal) cadListModal.classList.remove('open'); });
+  cadListFilter.addEventListener('input', () => renderCadaverList(cadListFilter.value));
+
+  btnCadaverLog.addEventListener('click', () => {
+    cadListFilter.value = '';
+    renderCadaverList('');
+    cadListModal.classList.add('open');
+  });
+
+  cadListExport.addEventListener('click', () => {
+    const log = loadCadaverLog().slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    if (!log.length) { alert('No entries to export.'); return; }
+    const headers = ['date','direction','count','type','source','courier','donor_ids','storage','signed_by','linked_event_title','linked_event_date','notes','created_at'];
+    const escapeCsv = v => {
+      const s = (v == null ? '' : String(v));
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = log.map(e => [
+      e.date, e.direction, e.count, e.type, e.source, e.courier,
+      e.donorIds, e.storage, e.signedBy, e.eventTitle, e.eventDate, e.notes, e.createdAt,
+    ].map(escapeCsv).join(','));
+    const csv = headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cadaver-log-${ymd(new Date())}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ── Team Status view ─────────────────────────────────────────────
+  // Pivot data by event. Each event card shows per-person task progress
+  // (Ana Maria | Bert | Universal). Tasks are clickable to mark done.
+  function buildEventTaskMap(evt) {
+    // Returns { ana: [tasks], bert: [tasks], universal: [tasks] }
+    const cat = classifyEvent(evt);
+    const tmpl = TASK_TEMPLATES[cat] || TASK_TEMPLATES.other;
+    const startKey = (evt.start_dt || '').slice(0, 10);
+    const startD = parseYMD(startKey);
+    const buckets = { ana: [], bert: [], universal: [] };
+    tmpl.tasks.forEach(task => {
+      const taskDate = addDays(startD, -task.offset);
+      const t = {
+        id: task.id,
+        text: task.text,
+        action: task.action || null,
+        roles: task.roles || null,
+        offset: task.offset,
+        scheduledKey: ymd(taskDate),
+        scheduledD: taskDate,
+        relativeLabel: task.offset > 0 ? `T-${task.offset}` : task.offset === 0 ? 'Day of' : `T+${Math.abs(task.offset)}`,
+        checkKey: 'evt:' + evt.id + ':' + task.id,
+      };
+      const rolesArr = task.roles || [];
+      if (!rolesArr.length) {
+        buckets.universal.push(t);
+      } else {
+        if (rolesArr.includes('anamaria')) buckets.ana.push(t);
+        if (rolesArr.includes('bert'))     buckets.bert.push(t);
+      }
+    });
+    return { category: cat, label: tmpl.label, cssClass: tmpl.cssClass, buckets };
+  }
+
+  function fmtEventWhen(eventDate) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = ymd(today);
+    if (eventDate === todayKey) return 'Today';
+    const d = parseYMD(eventDate);
+    const diff = Math.round((d - today) / 86400000);
+    if (diff === 1) return 'Tomorrow';
+    if (diff > 0 && diff <= 7) return `In ${diff} days · ${DOW[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+    if (diff < 0 && diff >= -7) return `${Math.abs(diff)} day${diff === -1 ? '' : 's'} ago`;
+    return `${DOW_FULL[d.getDay()]}, ${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+  }
+
+  function renderTeamStatus() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayKey = ymd(today);
+    const horizon = ymd(addDays(today, ADMIN_CONFIG.daysAhead));
+
+    // Filter events: only those with tasks (skip closed/hold/remote), within window
+    const interesting = state.events.filter(evt => {
+      const startKey = (evt.start_dt || '').slice(0, 10);
+      if (!startKey) return false;
+      if (startKey > horizon) return false;
+      const cat = classifyEvent(evt);
+      const tmpl = TASK_TEMPLATES[cat];
+      if (!tmpl) return false;
+      // skip events with zero tasks (closed, hold, remote)
+      return (tmpl.tasks || []).length > 0;
+    }).sort((a, b) => (a.start_dt || '').localeCompare(b.start_dt || ''));
+
+    // Filter to only future + last 7 days of past events (so just-finished labs still appear)
+    const visible = interesting.filter(evt => {
+      const startKey = (evt.start_dt || '').slice(0, 10);
+      if (startKey >= todayKey) return true;
+      // include past events from last 7 days
+      const d = parseYMD(startKey);
+      const diff = Math.round((today - d) / 86400000);
+      return diff <= 7;
+    });
+
+    if (!visible.length) {
+      dashEl.innerHTML = `
+        <div class="ts-no-events">
+          <div style="font-size:2rem;margin-bottom:8px;">📅</div>
+          No upcoming events with prep tasks in the next ${ADMIN_CONFIG.daysAhead} days.
+        </div>
+      `;
+      return;
+    }
+
+    // Intro banner explaining the view
+    const introBanner = `
+      <div style="background:linear-gradient(135deg, #003da5 0%, #0050d0 100%);color:#fff;border-radius:14px;padding:18px 24px;margin-bottom:18px;box-shadow:0 4px 16px rgba(0,61,165,0.15);">
+        <div style="font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:4px;">Team Status</div>
+        <div style="font-size:1.25rem;font-weight:700;margin-bottom:4px;">${visible.length} event${visible.length === 1 ? '' : 's'} on the radar</div>
+        <div style="font-size:0.88rem;color:rgba(255,255,255,0.85);">Each card shows progress per person. Click any task to mark it done — checks sync with the Day-by-day view.</div>
+      </div>
+    `;
+
+    const cards = visible.map(evt => {
+      const startKey = (evt.start_dt || '').slice(0, 10);
+      const { category, label, cssClass, buckets } = buildEventTaskMap(evt);
+      const surgeon = detectSurgeonFromTitle(evt.title);
+      const dsm = detectDsmFromTitle(evt.title);
+      const isPast = startKey < todayKey;
+      const isSoon = !isPast && (parseYMD(startKey) - today) / 86400000 <= 3;
+
+      const allTasks = [...buckets.ana, ...buckets.bert, ...buckets.universal];
+      const totalCount = allTasks.length;
+      const doneCount = allTasks.filter(t => isChecked(t.checkKey)).length;
+      const pct = totalCount === 0 ? 0 : Math.round(doneCount / totalCount * 100);
+
+      const renderColumn = (colKey, headerLabel, color, taskList) => {
+        const colDone = taskList.filter(t => isChecked(t.checkKey)).length;
+        const colTotal = taskList.length;
+        const pillClass = (colTotal > 0 && colDone === colTotal) ? 'complete' : '';
+        const tasksHtml = colTotal === 0
+          ? `<div class="ts-col-empty">— No tasks for this event —</div>`
+          : taskList.sort((a, b) => b.offset - a.offset).map(t => {
+              const checked = isChecked(t.checkKey);
+              const relTagClass = t.offset === 0 ? 'day-of' : (t.offset < 0 ? 'after' : '');
+              const actionBtn = (t.action === 'cadaverLog' && CURRENT_ROLE.showCadaverLog) ? `
+                <button type="button" class="btn-cadaver-task"
+                        data-event-id="${escapeHtml(String(evt.id))}"
+                        data-category="${escapeHtml(category)}"
+                        style="margin-left:6px;background:#fff;border:1.5px solid #c2185b;color:#c2185b;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:5px;cursor:pointer;font-family:inherit;">Open log →</button>` : '';
+              return `
+                <label class="task ${checked ? 'done' : ''}" data-key="${escapeHtml(t.checkKey)}" style="padding:5px 4px;">
+                  <input type="checkbox" ${checked ? 'checked' : ''} />
+                  <span class="task-text" style="font-size:0.85rem;">${escapeHtml(t.text)}<span class="relative-tag ${relTagClass}" style="font-size:0.62rem;">${t.relativeLabel}</span>${actionBtn}</span>
+                </label>
+              `;
+            }).join('');
+        return `
+          <div class="ts-col">
+            <div class="ts-col-header">
+              <span class="role-dot" style="background:${color};"></span>
+              ${escapeHtml(headerLabel)}
+              <span class="col-progress ${pillClass}">${colTotal === 0 ? '—' : `${colDone}/${colTotal}`}</span>
+            </div>
+            <div class="task-list">${tasksHtml}</div>
+          </div>
+        `;
+      };
+
+      return `
+        <div class="ts-event-card ${isSoon ? 'is-soon' : ''}" data-event-id="${escapeHtml(String(evt.id))}">
+          <div class="ts-event-header">
+            <div class="ts-event-title">
+              <span class="ts-tag" style="background:${cssClass === 'type-lab' ? '#003da5' : cssClass === 'type-specimen' ? '#c2185b' : cssClass === 'type-cleanup' ? '#00838f' : cssClass === 'type-training' ? '#6a1b9a' : cssClass === 'type-rd' ? '#2e7d32' : '#b0b8c5'};">${escapeHtml(label)}</span>
+              ${escapeHtml(evt.title || '(untitled)')}
+            </div>
+            <div class="ts-event-meta">
+              <span class="when ${isSoon ? 'is-soon' : ''} ${isPast ? 'past' : ''}">${escapeHtml(fmtEventWhen(startKey))}</span>
+              ${surgeon ? `&nbsp;·&nbsp;${escapeHtml(surgeon)}` : ''}
+              ${dsm ? `&nbsp;·&nbsp;${escapeHtml(dsm)}` : ''}
+              <div class="ts-progress-row">
+                <div class="ts-progress-bar"><div class="ts-progress-fill" style="width:${pct}%;"></div></div>
+                <span style="font-size:0.78rem;color:#666;font-weight:600;">${doneCount}/${totalCount}</span>
+              </div>
+            </div>
+          </div>
+          <div class="ts-columns">
+            ${renderColumn('ana',       'Ana Maria',  ROLES.anamaria.color, buckets.ana)}
+            ${renderColumn('bert',      'Bert',       ROLES.bert.color,     buckets.bert)}
+            ${renderColumn('universal', 'Universal',  '#888',                buckets.universal)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    dashEl.innerHTML = introBanner + cards;
+
+    // Wire checkbox toggles (same pattern as day view, simpler — no day-card hierarchy)
+    dashEl.querySelectorAll('label.task').forEach(lbl => {
+      lbl.addEventListener('change', () => {
+        const key = lbl.getAttribute('data-key');
+        const cb = lbl.querySelector('input[type="checkbox"]');
+        setChecked(key, cb.checked);
+        renderAll();
+      });
+    });
+    dashEl.querySelectorAll('.btn-cadaver-task').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const eventId = btn.getAttribute('data-event-id');
+        const category = btn.getAttribute('data-category');
+        const evt = state.events.find(ev => String(ev.id) === eventId);
+        if (!evt) return;
+        openCadaverModal(evt, category);
+      });
+    });
+  }
+
+  // ── Fetch from Teamup ──────────────────────────────────────────────
+  async function fetchEvents() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const start = ymd(today);
+    const end = ymd(addDays(today, cfg.daysAhead));
+    // Pad start by 7 days backward so we still see prep tasks for events that already started
+    const startPadded = ymd(addDays(today, -10));
+
+    const url = `https://api.teamup.com/${cfg.teamupCalendarKey}/events?startDate=${startPadded}&endDate=${end}&subcalendarId[]=${cfg.jacksonvilleSubcalId}`;
+
+    try {
+      const res = await fetch(url, { headers: { 'Teamup-Token': cfg.teamupApiToken } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const hidden = new Set((cfg.hiddenEventTitles || []).map(s => s.toLowerCase().trim()));
+      state.events = (data.events || [])
+        .filter(e => !hidden.has((e.title || '').toLowerCase().trim()))
+        .sort((a, b) => (a.start_dt || '').localeCompare(b.start_dt || ''));
+      buildDays();
+      renderAll();
+    } catch (err) {
+      console.error('Failed to fetch Teamup events:', err);
+      dashEl.innerHTML = `<div class="error-card">
+        <strong>Couldn't load calendar.</strong><br/>
+        ${escapeHtml(err.message || 'Unknown error')}<br/>
+        Check your network connection or the Teamup API token.
+      </div>`;
+    }
+  }
+
+  // ── Par Check Modal (Lab Supply + Medtronic) ─────────────────────
+  const parModal        = document.getElementById('par-modal');
+  const parModalTitle   = document.getElementById('par-modal-title');
+  const parModalSummary = document.getElementById('par-modal-summary');
+  const parFilter       = document.getElementById('par-filter');
+  const parShowBelow    = document.getElementById('par-show-below-only');
+  const parTableWrap    = document.getElementById('par-table-wrap');
+  const parReset        = document.getElementById('par-reset');
+  const parAction       = document.getElementById('par-action');
+  const parClose        = document.getElementById('par-close');
+
+  // counts persist per (mode, date) — so today's count survives a reload
+  function parKey(mode, date) {
+    return ADMIN_CONFIG.storageNamespace + '.parCounts.' + mode + '.' + date;
+  }
+  function loadParCounts(mode, date) {
+    try {
+      const raw = localStorage.getItem(parKey(mode, date));
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveParCounts(mode, date, counts) {
+    try { localStorage.setItem(parKey(mode, date), JSON.stringify(counts)); } catch (e) {}
+  }
+
+  let parState = { mode: null, date: null }; // 'labSupply' or 'medtronic'
+
+  function parItems() {
+    if (parState.mode === 'labSupply') {
+      return LAB_SUPPLY_PAR.map(it => ({
+        id: it.id, name: it.name, par: it.par, unit: it.unit, isMedtronic: false,
+      }));
+    }
+    if (parState.mode === 'medtronic') {
+      return MEDTRONIC_PAR.map(p => {
+        const cat = CATALOG_BY_PN[p.pn];
+        return {
+          id: p.pn,
+          name: cat ? `${p.pn} — ${cat.desc}` : p.pn,
+          pn: p.pn,
+          par: p.par,
+          unit: 'ea',
+          isMedtronic: true,
+        };
+      });
+    }
+    return [];
+  }
+
+  function renderParTable() {
+    const items = parItems();
+    const counts = loadParCounts(parState.mode, parState.date);
+    const filter = (parFilter.value || '').toLowerCase();
+    const onlyBelow = parShowBelow.checked;
+
+    const filtered = items.filter(it => {
+      const blob = (it.name + ' ' + (it.pn || '')).toLowerCase();
+      if (filter && !blob.includes(filter)) return false;
+      const current = counts[it.id];
+      const isBelow = current != null && current < it.par;
+      if (onlyBelow && !isBelow) return false;
+      return true;
+    });
+
+    // Sort: below-par items first, then by name
+    filtered.sort((a, b) => {
+      const ac = counts[a.id], bc = counts[b.id];
+      const ab = ac != null && ac < a.par;
+      const bb = bc != null && bc < b.par;
+      if (ab !== bb) return ab ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    if (!filtered.length) {
+      parTableWrap.innerHTML = `<div class="empty-state-text" style="padding:20px;text-align:center;">No items match the current filter.</div>`;
+      return;
+    }
+
+    const rows = filtered.map(it => {
+      const current = counts[it.id];
+      const hasCount = current != null;
+      const below = hasCount && current < it.par;
+      const reorderQty = below ? Math.max(0, it.par - current) : '';
+      return `
+        <tr data-id="${escapeHtml(it.id)}">
+          <td style="${below ? 'color:#c1281a;font-weight:600;' : ''}">${escapeHtml(it.name)}</td>
+          <td style="text-align:center;color:#888;">${it.par} ${escapeHtml(it.unit)}</td>
+          <td style="text-align:center;">
+            <input type="number" min="0" value="${hasCount ? current : ''}"
+                   data-par-id="${escapeHtml(it.id)}"
+                   style="width:80px;border:1.5px solid ${below ? '#c1281a' : '#d0d8e8'};border-radius:6px;padding:5px 8px;text-align:center;font-size:0.88rem;font-family:inherit;${below ? 'background:#fff5f5;color:#c1281a;font-weight:700;' : ''}" />
+          </td>
+          <td style="text-align:center;">
+            ${below ? `<span style="color:#c1281a;font-weight:700;">↓ Below par (order ${reorderQty})</span>` : (hasCount ? `<span style="color:#2e7d32;font-weight:600;">✓ OK</span>` : `<span style="color:#aaa;">—</span>`)}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    parTableWrap.innerHTML = `
+      <table class="items-table" style="min-width:680px;">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align:center;width:90px;">Par</th>
+            <th style="text-align:center;width:90px;">Current</th>
+            <th style="text-align:center;width:200px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+
+    // Wire count inputs
+    parTableWrap.querySelectorAll('input[data-par-id]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const id = inp.getAttribute('data-par-id');
+        const counts = loadParCounts(parState.mode, parState.date);
+        if (inp.value === '') delete counts[id];
+        else counts[id] = Math.max(0, parseInt(inp.value, 10) || 0);
+        saveParCounts(parState.mode, parState.date, counts);
+        // re-render to update status & ordering
+        renderParTable();
+        renderParSummary();
+      });
+    });
+  }
+
+  function renderParSummary() {
+    const items = parItems();
+    const counts = loadParCounts(parState.mode, parState.date);
+    const counted = items.filter(it => counts[it.id] != null).length;
+    const below = items.filter(it => counts[it.id] != null && counts[it.id] < it.par).length;
+    const total = items.length;
+    parModalSummary.innerHTML = `
+      <strong>${counted}</strong> of <strong>${total}</strong> items counted ·
+      <strong style="color:${below ? '#c1281a' : '#2e7d32'};">${below}</strong> below par
+      ${parState.date ? ` · count date: ${escapeHtml(parState.date)}` : ''}
+    `;
+  }
+
+  function openParModal(mode, dateKey) {
+    parState.mode = mode;
+    parState.date = dateKey || ymd(new Date());
+    parFilter.value = '';
+    parShowBelow.checked = false;
+    if (mode === 'labSupply') {
+      parModalTitle.textContent = 'Lab Supply Par Check (non-Medtronic)';
+      parAction.textContent = `Email ${LAB_SUPPLY_CONTACT.name} →`;
+    } else {
+      parModalTitle.textContent = 'Medtronic Product Par Check';
+      parAction.textContent = 'Order via Customer Service →';
+    }
+    renderParSummary();
+    renderParTable();
+    parModal.classList.add('open');
+  }
+
+  parClose.addEventListener('click', () => parModal.classList.remove('open'));
+  parModal.addEventListener('click', (e) => { if (e.target === parModal) parModal.classList.remove('open'); });
+  parFilter.addEventListener('input', renderParTable);
+  parShowBelow.addEventListener('change', renderParTable);
+
+  parReset.addEventListener('click', () => {
+    if (!confirm("Clear all current counts for this par check? You'll need to re-count.")) return;
+    saveParCounts(parState.mode, parState.date, {});
+    renderParTable();
+    renderParSummary();
+  });
+
+  parAction.addEventListener('click', () => {
+    const items = parItems();
+    const counts = loadParCounts(parState.mode, parState.date);
+    const below = items
+      .filter(it => counts[it.id] != null && counts[it.id] < it.par)
+      .map(it => ({
+        ...it,
+        current: counts[it.id],
+        reorderQty: Math.max(1, it.par - counts[it.id]),
+      }));
+
+    if (!below.length) {
+      alert("Nothing is below par — no email needed.");
+      return;
+    }
+
+    if (parState.mode === 'labSupply') {
+      sendLabSupplyEmail(below);
+    } else {
+      orderMedtronicViaCS(below);
+    }
+  });
+
+  function sendLabSupplyEmail(below) {
+    const today = ymd(new Date());
+    const todayD = parseYMD(today);
+    const dateStr = MONTHS_SHORT[todayD.getMonth()] + ' ' + todayD.getDate() + ', ' + todayD.getFullYear();
+
+    const lines = below.map(it => `• ${it.reorderQty} ${it.unit} of ${it.name} (currently ${it.current}, par ${it.par})`);
+    const cc = ADMIN_CONFIG.restockEmail;
+    const body = [
+      `Hi ${LAB_SUPPLY_CONTACT.name.split(' ')[0]},`,
+      '',
+      `Quick par check from the Jacksonville Lab on ${dateStr}. The following items are below par — could you reorder so we can bring them back up?`,
+      '',
+      ...lines,
+      '',
+      `Please ship to ${cc.address}.`,
+      '',
+      'Thanks,',
+      cc.contactName,
+      cc.contactEmail,
+      cc.fromLab,
+    ].join('\n');
+
+    const subject = `Lab Supply Reorder Request — ${cc.fromLab} — ${dateStr}`;
+    const url = `mailto:${encodeURIComponent(LAB_SUPPLY_CONTACT.email)}?cc=${encodeURIComponent(cc.contactEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  }
+
+  function orderMedtronicViaCS(below) {
+    // Open the existing restock modal with a synthetic "inventory" event
+    const today = ymd(new Date());
+    const syntheticEvt = {
+      id: 'inventory_' + today,
+      title: 'Inventory restock — par check',
+      start_dt: today,
+      end_dt: today,
+    };
+    parModal.classList.remove('open');
+    // Use 'inventory' category — uses the dedicated inventory template
+    openRestockModal(syntheticEvt, 'inventory');
+    // Replace the items list with the below-par items
+    restockState.items = below.map(it => ({
+      partNumber: it.pn,
+      description: (CATALOG_BY_PN[it.pn] && CATALOG_BY_PN[it.pn].desc) || it.name,
+      qty: it.reorderQty,
+      unit: 'ea',
+    }));
+    renderItemsTable();
+    // Default to Med Ed cost center for inventory restocks
+    modalDsmSelect.value = 'Med Ed';
+    modalCcDisplay.textContent = dsmByName('Med Ed').cc;
+    // Default timing to "post" (reorder/replenish phrasing fits inventory)
+    setTimingChip('post');
+  }
+
+  // ── Role banner, view switcher & toolbar visibility ──────────────
+  (function applyRoleUI() {
+    // Role chip on the progress pill
+    const roleBadgeEl = document.getElementById('role-badge');
+    if (roleBadgeEl) {
+      roleBadgeEl.style.display = 'inline-block';
+      roleBadgeEl.style.background = CURRENT_ROLE.color;
+      roleBadgeEl.textContent = CURRENT_ROLE_KEY === 'master'
+        ? 'Master · Josh'
+        : CURRENT_ROLE.name.split(' ')[0];
+    }
+    // Hide cadaver log button for roles that don't see it
+    const cadBtn = document.getElementById('btn-cadaver-log');
+    if (cadBtn) cadBtn.style.display = CURRENT_ROLE.showCadaverLog ? '' : 'none';
+    // Hide share-links button outside master view
+    const shareBtn = document.getElementById('btn-share-links');
+    if (shareBtn) shareBtn.style.display = CURRENT_ROLE_KEY === 'master' ? '' : 'none';
+    // View switcher only on master
+    const viewSwitch = document.getElementById('view-switcher');
+    if (viewSwitch) viewSwitch.style.display = (CURRENT_ROLE_KEY === 'master') ? 'inline-flex' : 'none';
+    // Mark active view tab
+    document.querySelectorAll('.view-tab').forEach(t => {
+      t.classList.toggle('active', t.getAttribute('data-view') === CURRENT_VIEW);
+      // Wire the click to navigate (preserves role)
+      t.addEventListener('click', (e) => {
+        e.preventDefault();
+        const v = t.getAttribute('data-view');
+        if (v === CURRENT_VIEW) return;
+        window.location.href = buildUrl(CURRENT_ROLE_KEY, v);
+      });
+    });
+    // In Team Status view, the "All days / Days with tasks / Incomplete only"
+    // filter chips don't apply — hide them.
+    const filterChipsEl = document.getElementById('filter-chips');
+    if (filterChipsEl) filterChipsEl.style.display = (CURRENT_VIEW === 'team') ? 'none' : 'flex';
+    // Same for collapse-all
+    const collapseBtnEl = document.getElementById('btn-collapse');
+    if (collapseBtnEl) collapseBtnEl.style.display = (CURRENT_VIEW === 'team') ? 'none' : '';
+
+    // Header tweaks per role
+    const titleEl = document.querySelector('header .title-block h1');
+    if (titleEl && CURRENT_ROLE_KEY !== 'master') {
+      titleEl.textContent = `Jacksonville Lab — ${CURRENT_ROLE.name}`;
+    }
+    const locEl = document.querySelector('header .title-block .location');
+    if (locEl && CURRENT_ROLE_KEY !== 'master') {
+      locEl.textContent = CURRENT_ROLE.label + ' · Today + 30 days';
+    }
+  })();
+
+  // Share-links menu (master view only)
+  const shareLinksBtn = document.getElementById('btn-share-links');
+  if (shareLinksBtn) {
+    shareLinksBtn.addEventListener('click', () => {
+      // Build URL base — strip any existing role query
+      const baseUrl = window.location.href.split('?')[0].split('#')[0];
+      const lines = Object.entries(ROLES).map(([key, role]) => {
+        const url = key === 'master' ? baseUrl : `${baseUrl}?role=${key}`;
+        return `${role.name}${role.label && key !== 'master' ? ' (' + role.label + ')' : ''}\n${url}`;
+      });
+      const allText = lines.join('\n\n');
+      // Use prompt for the user to copy specific links
+      const message =
+        "Share these links with each teammate:\n\n" +
+        "──────────────────────────────────\n\n" +
+        allText +
+        "\n\n──────────────────────────────────\n\n" +
+        "Click OK to copy ALL links to your clipboard.";
+      if (confirm(message)) {
+        navigator.clipboard.writeText(allText).then(
+          () => alert('Links copied to clipboard.'),
+          () => alert('Could not copy automatically — select and copy from the previous dialog.')
+        );
+      }
+    });
+  }
+
+  // ── Wire up toolbar ────────────────────────────────────────────────
+  refreshBtn.addEventListener('click', () => {
+    dashEl.innerHTML = `<div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div><div class="skeleton-day"></div>`;
+    fetchEvents();
+  });
+
+  collapseBtn.addEventListener('click', () => {
+    state.allCollapsed = !state.allCollapsed;
+    collapseBtn.textContent = state.allCollapsed ? '⌃ Expand all' : '⌄ Collapse all';
+    renderAll();
+  });
+
+  filterChips.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    filterChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.filter = chip.getAttribute('data-filter');
+    renderAll();
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────────
+  fetchEvents();
+})();
+</script>
+
+</body>
+</html>

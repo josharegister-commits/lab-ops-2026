@@ -1,0 +1,26 @@
+# ─── macOS / OS junk ────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# ─── Editor / IDE ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Source PDFs (not part of the app — too heavy for repo) ─────────
+*.pdf
+
+# ─── Optional local config (if you split the API token out later) ───
+config.local.js
+*.local.js
+
+# ─── Build / temp ───────────────────────────────────────────────────
+node_modules/
+dist/
+tmp/
+.cache/
